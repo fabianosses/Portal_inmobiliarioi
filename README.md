@@ -53,3 +53,18 @@ d. Aceptar arrendatarios.
     3- Comuna
     4- Región
     5- SolicitudArriendo
+
+
+    SolicitudArriendo:
+        id (por defecto django)
+        uuid
+        arrendador
+        inmueble
+        choices
+            aceptado
+            rechazado
+            pendiente
+        creado
+        actualizado
+        mensaje
+        archivos
