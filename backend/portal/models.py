@@ -1,8 +1,7 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
-
-
 
 class Region(models.Model):
     nro_region = models.CharField(max_length=5)
@@ -21,24 +20,11 @@ class Comuna(models.Model):
 
 # modelo de inmueble
 class Inmueble(models.Model):
-    class TipoInmueble(models.TextChoices):
-        CASA = 'casa', 'Casa'
-        DEPARTAMENTO = 'departamento', 'Departamento'
-        PARCELA = 'parcela', 'Parcela'
+    class Tipo_de_inmueble(models.TextChoices):
+        casa = "CASA", _("Casa")
+        depto = "DEPARTAMENTO", _("Departamento")
+        parcela = "PARCELA", _("Parcela")
 
-#    TIPO_INMUEBLE_CHOICES = [
-#        ('casa', 'Casa'),
-#        ('departamento', 'Departamento'),
-#        ('oficina', 'Oficina'),
-#        ('local_comercial', 'Local Comercial'),
-#        ('terreno', 'Terreno'),
-#   ]
-
-#    ESTADO_INMUEBLE_CHOICES = [
-#        ('nuevo', 'Nuevo'),
-#        ('usado', 'Usado'),
-#        ('en_construccion', 'En Construcción'),
-#    ]
 
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -53,10 +39,8 @@ class Inmueble(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
     comuna = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name="inmuebles")
 
-    tipo_inmueble = models.CharField(max_length=20, choices=TipoInmueble.choices)
+    tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
 #    estado_inmueble = models.CharField(max_length=20, choices=ESTADO_INMUEBLE_CHOICES)
-    
-
     
 
 
