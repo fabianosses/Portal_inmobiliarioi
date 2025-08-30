@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 import uuid
 
@@ -41,9 +41,7 @@ class Inmueble(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
     comuna = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name="inmuebles")
-
     tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
-#    estado_inmueble = models.CharField(max_length=20, choices=ESTADO_INMUEBLE_CHOICES)
     
 
 
@@ -90,9 +88,8 @@ class PerfilUsuario(AbstractUser):
         ARRENDADOR = "ARRENDADOR", _("Arrendador")
         ARRENDATARIO = "ARRENDATARIO", _("Arrendatario")
 
-#    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil")
     tipo_usuario = models.CharField(max_length=13, choices=TipoUsuario.choices, default=TipoUsuario.ARRENDATARIO)
     rut = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} | {self.tipo_usuario}"
+        return f"{self.get_full_name()} | {self.tipo_usuario}"

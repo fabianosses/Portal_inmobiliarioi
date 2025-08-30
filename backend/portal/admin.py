@@ -19,5 +19,5 @@ class SolicitudArriendoAdmin(admin.ModelAdmin):
     pass
 
 @admin.register(PerfilUsuario)
-class PerfilUserAdmin(admin.ModelAdmin):
+class PerfilUsuarioAdmin(admin.ModelAdmin):
     pass
