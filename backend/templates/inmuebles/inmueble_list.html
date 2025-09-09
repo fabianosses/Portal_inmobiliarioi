@@ -7,5 +7,16 @@
 </head>
 <body>
     <h1>inmueble list</h1>
+    {% for inmueble in inmuebles %}
+        <div>
+            <h2>{{ inmueble.nombre }}</h2>
+            <p>{{ inmueble.descripcion }}</p>
+            {% if inmueble.imagen %}
+                <img src="{{ inmueble.imagen.url }}" alt="{{ inmueble.nombre }}" style="max-width:200px;">
+            {% else %}
+                <p>No image available</p>
+            {% endif %}
+        </div>
+    {% endfor %}
 </body>
 </html>

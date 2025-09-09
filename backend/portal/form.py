@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import *
 
 class RegionForm(forms.ModelForm):
@@ -37,9 +38,37 @@ class InmuebleForm(forms.ModelForm):
 class SolicitudArriendoForm(forms.ModelForm):
     class Meta:
         model = SolicitudArriendo
-        fields = ['inmueble', 'arrendatario', 'mensaje', 'estado']
+        fields = ['mensaje']
 #        widgets = {
 #            'inmueble': forms.Select(attrs={'class': 'form-control'}),
 #            'arrendatario': forms.Select(attrs={'class': 'form-control'}),
 #            'mensaje': forms.Textarea(attrs={'class': 'form-control'}),
 #        }
+
+class PerfilUsuarioForm(forms.ModelForm):
+    class Meta:
+        model = PerfilUsuario
+        fields = ['tipo_usuario', 'rut', 'password']
+#        widgets = {
+#            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+#            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+#        }
+
+class RegisterForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = PerfilUsuario
+        fields = [
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'rut',
+            'tipo_usuario',
+            'password1',
+            'password2']
+
+class LoginForm(AuthenticationForm):
+    username = forms.CharField(label='Usuario', max_length=150)
+    password = forms.CharField(label='Contraseña', widget=forms.PasswordInput)

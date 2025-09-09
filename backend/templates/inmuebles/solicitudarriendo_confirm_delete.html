@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>solicitud arriendo confirm delete</h1>
-</body>
-</html>
+<form action="">
+    {% csrf_token %}
+    <p>¿Estás seguro de que deseas eliminar la solicitud de arriendo "{{ object }} {{ object.estado }}"?</p>
+    <button type="submit">Confirmar</button>
+    <a href="{% url 'solicitudarriendo_list' %}">Cancelar</a>
+</form>

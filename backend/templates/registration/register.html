@@ -6,10 +6,12 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>inmueble form</h1>
-    <form method="post" enctype="multipart/form-data">
+    <h1>Registro</h1>
+    <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Guardar</button>
+        <button type="submit">Crear cuenta</button>
+    </form>
+    <a href="{% url 'login' %}">¿Ya tienes una cuenta? Inicia sesión aquí</a>
 </body>
 </html>

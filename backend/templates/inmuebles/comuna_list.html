@@ -6,6 +6,18 @@
     <title>Document</title>
 </head>
 <body>
-    
+    Lista de comunas
+
+    <ul>
+        {% for comuna in comunas %}
+            {{ comuna.nro_comuna }}
+            {{ comuna.nombre }}
+
+        {% endfor %}
+            <li>
+                <a href="{% url 'inmueble_list' comuna.id %}">{{ comuna.nombre }}</a>
+            </li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
