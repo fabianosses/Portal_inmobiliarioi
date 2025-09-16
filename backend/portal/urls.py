@@ -8,7 +8,8 @@ from .views import (
     HomeInmuebleListView,
     SolicitudArriendoCreateView,
     PerfilView, PerfilUserUpdateView,
-    login_view, logout_view, register_view,
+    CustomLoginView, CustomLogoutView,
+    register_view,
     InmueblesListView,
     InmuebleCreateView,
     InmuebleUpdateView,
@@ -66,8 +67,8 @@ urlpatterns = [
 #########################################################################
     # autenticación
     path('account/', RedirectView.as_view(url='/account/register/', permanent=False)),
-    path('account/login/', login_view, name='login'),
-    path('account/logout/', logout_view, name='logout'),
+    path('account/login/', CustomLoginView.as_view(), name='login'),
+    path('account/logout/', CustomLogoutView.as_view(), name='logout'),
     path('account/register/', register_view, name='register'),
 
 #########################################################################

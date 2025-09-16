@@ -6,6 +6,8 @@ from django.urls import reverse_lazy
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -241,21 +243,28 @@ def register_view(request):
     
     return render(request, 'registration/register.html', {'form': form})
 
+########################################################
+# Login usando vistas basadas en clases
+#########################################################
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+    form_class = LoginForm
+    redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Has iniciado sesión correctamente.')
+        return reverse_lazy('home')
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error en el inicio de sesión. Verifica tus credenciales.')
+        return super().form_invalid(form)
 
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-    form = LoginForm(request, data=request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.get_user()
-        login(request, user)
-        messages.success(request, 'Has iniciado sesión correctamente.')
-        return redirect('home')
-    return render(request, 'registration/login.html', {'form': form})
-
-
-def logout_view(request):
-    if request.user.is_authenticated:  # Verificar antes de hacer logout
-        logout(request)
-        messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('login')  # Redirigir siempre al login
+########################################################
+# Logout usando vistas basadas en clases
+#########################################################
+class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy('home')
+    
+    def dispatch(self, request, *args, **kwargs):
+        messages.success(request, 'Acabas de cerrar sesión correctamente.')
+        return super().dispatch(request, *args, **kwargs)
