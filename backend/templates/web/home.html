@@ -1,3 +1,4 @@
+<!-- backend/templates/web/home.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -53,14 +54,14 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="#">Inmobiliaria Conecta</a>
+      <a class="navbar-brand fw-bold" href="{% url 'home' %}">Inmobiliaria Conecta</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto me-3">
-          <li class="nav-item"><a class="nav-link active" href="#">Inicio</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Propiedades</a></li>
+          <li class="nav-item"><a class="nav-link active" href="{% url 'home' %}">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'inmueble_list' %}">Propiedades</a></li>
           <li class="nav-item"><a class="nav-link" href="#">Arrendadores</a></li>
           <li class="nav-item"><a class="nav-link" href="#">Arrendatarios</a></li>
           <li class="nav-item"><a class="nav-link" href="#">Contacto</a></li>
@@ -81,9 +82,51 @@
     <div class="hero-content">
       <h1 class="fw-bold display-4">Encuentra tu próximo hogar</h1>
       <p class="lead">Conecta arrendadores y arrendatarios fácilmente</p>
-      <a href="#propiedades" class="btn btn-primary btn-lg">Ver Propiedades</a>
+      <!-- Botón modificado para redirigir a la página de listado -->
+      <a href="{% url 'inmueble_list' %}" class="btn btn-primary btn-lg">Ver Propiedades</a>
     </div>
   </section>
+
+<script>
+function cargarComunas() {
+    const regionSelect = document.getElementById('id_region');
+    const comunaSelect = document.getElementById('id_comuna');
+    const regionCode = regionSelect.value;
+    
+    if (regionCode) {
+        fetch(`/cargar-comunas/?region=${regionCode}`)
+            .then(response => response.json())
+            .then(comunas => {
+                comunaSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Selecciona una comuna';
+                comunaSelect.appendChild(option);
+                
+                comunas.forEach(comuna => {
+                    const option = document.createElement('option');
+                    option.value = comuna.codigo;
+                    option.textContent = comuna.nombre;
+                    comunaSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    } else {
+        comunaSelect.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Primero selecciona una región';
+        comunaSelect.appendChild(option);
+    }
+}
+
+// Cargar regiones al iniciar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Opcional: cargar regiones desde la API si es necesario
+});
+</script>
 
   <!-- Propiedades -->
 
@@ -108,7 +151,7 @@
                   <li><strong>Estacionamiento:</strong> {{ i.estacionamiento }}</li>
                 </ul>
                 <p class="card-price">${{ i.precio }} / mes</p>
-                <a href="{% url 'solicitud_arriendo' i.id %}" class="btn btn-outline-primary w-100">Solicitar Arrendamiento</a>
+                <a href="{% url 'solicitud_create' i.id %}" class="btn btn-outline-primary w-100">Solicitar Arrendamiento</a>
               </div>
             </div>
           </div>

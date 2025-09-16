@@ -1,4 +1,8 @@
+# backend/portal/urls.py
+
 from django.urls import path
+from .views import cargar_comunas
+from .api_views import RegionAPIView, ComunaAPIView
 from .views import (
     HomeInmuebleListView,
     SolicitudArriendoCreateView,
@@ -63,4 +67,13 @@ urlpatterns = [
     path('account/login/', login_view, name='login'),
     path('account/logout/', logout_view, name='logout'),
     path('account/register/', register_view, name='register'),
+
+#########################################################################
+    # API endpoints
+    path('api/regiones/', RegionAPIView.as_view(), name='api_regiones'),
+    path('api/comunas/', ComunaAPIView.as_view(), name='api_comunas'),
+
+#########################################################################
+    # Cargar comunas dinámicamente
+    path('cargar-comunas/', cargar_comunas, name='cargar_comunas'),
 ]

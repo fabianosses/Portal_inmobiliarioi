@@ -1,3 +1,5 @@
+# backend/portal/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse_lazy
@@ -6,8 +8,10 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.contrib.auth import login, logout
-from .form import LoginForm, RegisterForm
+from .forms import LoginForm, RegisterForm
 from django.views.decorators.csrf import csrf_protect
+from django.http import JsonResponse
+from .services import ChileanLocationService
 
 from .models import (
     Region,
@@ -17,7 +21,7 @@ from .models import (
     PerfilUsuario
 )
 
-from .form import (
+from .forms import (
     RegionForm,
     ComunaForm,
     InmuebleForm,
@@ -32,9 +36,17 @@ from django.views.generic import (
     DeleteView
 )
 
+def cargar_comunas(request):
+    """Vista para cargar comunas basado en la región seleccionada"""
+    region_code = request.GET.get('region')
+    if region_code:
+        comunas = ChileanLocationService.get_comunas_by_region(region_code)
+        data = [{'codigo': c['codigo'], 'nombre': c['nombre']} for c in comunas]
+        return JsonResponse(data, safe=False)
+    return JsonResponse([], safe=False)
+
 def HomeInmuebleListView (request):
     return render(request, 'web/home.html')
-
 
 #########################################################
 
@@ -90,7 +102,6 @@ class ComunaDeleteView(DeleteView):
     success_url = reverse_lazy('comuna_list')
 
 
-
 #########################################################
 
 #CRUD INMUEBLE
@@ -100,6 +111,13 @@ class InmueblesListView(ListView):
     model = Inmueble
     template_name = 'web/home.html'
     context_object_name = 'inmuebles'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        comuna_codigo = self.request.GET.get('comuna')
+        if comuna_codigo:
+            queryset = queryset.filter(comuna_codigo=comuna_codigo)
+        return queryset
 
 class InmuebleCreateView(CreateView):
     model = Inmueble
@@ -184,7 +202,7 @@ class PerfilView(UpdateView):
         # Solicitadas por mí (si soy arrendatario)
         enviadas = (
             u.solicitudes_enviadas
-            .select_related('inmueble', 'inmueble__comuna')
+            .select_related('inmueble')
             .order_by('-creado')
         )
 
@@ -192,7 +210,7 @@ class PerfilView(UpdateView):
         recibidas = (
             SolicitudArriendo.objects
             .filter(inmueble__propietario=u)
-            .select_related('inmueble', 'inmueble_comuna', 'arrendatario')
+            .select_related('inmueble', 'arrendatario')
             .order_by('-creado')
         )
 
@@ -212,7 +230,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success = (request, 'Cuenta creada correctamente.')
+            messages.success(request, 'Cuenta creada correctamente.')
             return redirect('home')
 
     else:

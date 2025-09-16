@@ -1,3 +1,5 @@
+# backend/portal/models.py
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
@@ -15,10 +17,10 @@ class Region(models.Model):
 
 class Comuna(models.Model):
     nombre = models.CharField(max_length=50)
-    region = models.ForeignKey(Region,on_delete=models.PROTECT, related_name="comunas")
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, related_name="comunas")
 
     def __str__(self):
-        return f"{self.nombre} ||| número de región es: {self.region}" #Valparaiso ||| nombre de región es: Valparaiso
+        return f"{self.nombre} ||| número de región es: {self.region.nombre}" #Valparaiso ||| nombre de región es: Valparaiso
     
 
 # modelo de inmueble
@@ -41,28 +43,17 @@ class Inmueble(models.Model):
     precio_mensual = models.DecimalField(max_digits=8, decimal_places=2)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
-    comuna = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name="inmuebles")
+# CAMBIOS: Reemplazar el ForeignKey con campos para la API
+    region_codigo = models.CharField(max_length=10, blank=True, null=True)
+    region_nombre = models.CharField(max_length=100, blank=True, null=True)
+    comuna_codigo = models.CharField(max_length=10, blank=True, null=True)
+    comuna_nombre = models.CharField(max_length=100, blank=True, null=True)
+# Removemos el ForeignKey a Comuna
+#    comuna = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name="inmuebles")
     tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
     
-
-
     def __str__(self):
         return f" {self.id} {self.propietario} {self.nombre}"
-
-"""    SolicitudArriendo:
-        id (por defecto django)
-        uuid
-        arrendador
-        inmueble
-        choices
-            aceptado
-            rechazado
-            pendiente
-        creado
-        actualizado
-        mensaje
-        archivos"""
-
 
 class SolicitudArriendo(models.Model):
 

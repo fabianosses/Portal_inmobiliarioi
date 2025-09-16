@@ -18,7 +18,7 @@
                     <div class="card-body">
                         <h4 class="card-title mb-1">{{ inmueble.nombre }}</h4>
                         <p class="text-muted mb-2">
-                            {{ inmueble.comuna.nombre }} . {{ inmueble.get_tipo_de_inmueble_display }}
+                            {{ inmueble.comuna_nombre }} . {{ inmueble.get_tipo_de_inmueble_display }}
                         </p>
                         <p class="mb-3"> {{ inmueble.descripcion|default:"(sin descripción)" }}</p>
                         <ul class="list-inline small mb-3">
