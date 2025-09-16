@@ -2,11 +2,18 @@
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.conf import settings
 import uuid
 
 # Create your models here.
+
+# Crear un grupo de Arrendadores
+arrendadores_group, created = Group.objects.get_or_create(name='Arrendadores')
+
+# Asignar permisos al grupo
+permission = Permission.objects.get(name='Can add inmueble')
+arrendadores_group.permissions.add(permission)
 
 class Region(models.Model):
     nro_region = models.CharField(max_length=5)

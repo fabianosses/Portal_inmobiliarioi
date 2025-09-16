@@ -3,11 +3,12 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse_lazy
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.contrib.auth import login, logout
 from .forms import LoginForm, RegisterForm
 from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
@@ -225,6 +226,9 @@ class PerfilView(UpdateView):
 ##########################################################
 
 def register_view(request):
+    if request.user.is_authenticated:  # Prevenir acceso si ya está autenticado
+        return redirect('home')
+    
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
@@ -232,10 +236,11 @@ def register_view(request):
             login(request, user)
             messages.success(request, 'Cuenta creada correctamente.')
             return redirect('home')
-
     else:
         form = RegisterForm()
+    
     return render(request, 'registration/register.html', {'form': form})
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -249,8 +254,8 @@ def login_view(request):
     return render(request, 'registration/login.html', {'form': form})
 
 
-@login_required
 def logout_view(request):
-    logout(request)
-    messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('login')
+    if request.user.is_authenticated:  # Verificar antes de hacer logout
+        logout(request)
+        messages.success(request, 'Has cerrado sesión correctamente.')
+    return redirect('login')  # Redirigir siempre al login
