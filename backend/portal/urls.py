@@ -1,6 +1,7 @@
 # backend/portal/urls.py
 
 from django.urls import path
+from django.views.generic import RedirectView
 from .views import cargar_comunas
 from .api_views import RegionAPIView, ComunaAPIView
 from .views import (
@@ -64,6 +65,7 @@ urlpatterns = [
 
 #########################################################################
     # autenticación
+    path('account/', RedirectView.as_view(url='/account/register/', permanent=False)),
     path('account/login/', login_view, name='login'),
     path('account/logout/', logout_view, name='logout'),
     path('account/register/', register_view, name='register'),
