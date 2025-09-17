@@ -1,0 +1,53 @@
+<!-- backend/templates/usuarios/grupo_list.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestión de Grupos</h2>
+        <div>
+            <a href="{% url 'forzar_actualizacion_grupos' %}" class="btn btn-warning me-2">
+                Forzar Actualización
+            </a>
+            <a href="{% url 'usuario_list' %}" class="btn btn-secondary">Volver a Usuarios</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Lista de Grupos</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Grupo</th>
+                            <th>Permisos</th>
+                            <th>Usuarios</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grupo in grupos %}
+                        <tr>
+                            <td>{{ grupo.name }}</td>
+                            <td>
+                                {% for permiso in grupo.permissions.all %}
+                                <span class="badge bg-info mb-1">{{ permiso.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ grupo.user_set.count }}</td>
+                            <td>
+                                <a href="{% url 'grupo_update' grupo.id %}" class="btn btn-sm btn-primary">Editar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

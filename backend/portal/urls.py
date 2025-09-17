@@ -2,10 +2,9 @@
 
 from django.urls import path
 from django.views.generic import RedirectView
-from .views import cargar_comunas
 from .api_views import RegionAPIView, ComunaAPIView
 from .views import (
-    HomeInmuebleListView,
+    cargar_comunas,
     SolicitudArriendoCreateView,
     PerfilView, PerfilUserUpdateView,
     CustomLoginView, CustomLogoutView,
@@ -25,12 +24,17 @@ from .views import (
     SolicitudArriendoListView,
     SolicitudArriendoUpdateView,
     SolicitudArriendoDeleteView,
-    PerfilUserUpdateView
+    PerfilUserUpdateView,
+    GrupoListView, 
+    GrupoUpdateView, 
+    UsuarioGrupoUpdateView,
+    forzar_actualizacion_grupos,
+    home_view,
 )
 
 urlpatterns = [
 
-    path('', InmueblesListView.as_view(), name='home'),
+    path('', home_view, name='home'),
 
     # region
     path('listar_regiones/', RegionListView.as_view(), name='region_list'),
@@ -79,4 +83,11 @@ urlpatterns = [
 #########################################################################
     # Cargar comunas dinámicamente
     path('cargar-comunas/', cargar_comunas, name='cargar_comunas'),
+
+#########################################################################
+    # URLs para gestión de grupos
+    path('grupos/', GrupoListView.as_view(), name='grupo_list'),
+    path('grupos/<int:pk>/editar/', GrupoUpdateView.as_view(), name='grupo_update'),
+    path('usuarios/<int:pk>/grupos/', UsuarioGrupoUpdateView.as_view(), name='usuario_grupo_update'),
+    path('grupos/forzar-actualizacion/', forzar_actualizacion_grupos, name='forzar_actualizacion_grupos'),
 ]

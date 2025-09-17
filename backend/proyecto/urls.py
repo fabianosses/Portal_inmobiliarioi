@@ -1,3 +1,4 @@
+# backend/proyecto/urls.py
 """
 URL configuration for proyecto project.
 
@@ -21,7 +22,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('portal.urls')),
+    path('', include('portal.urls')),  # INCLUYE las URLs de portal
 ]
 
 

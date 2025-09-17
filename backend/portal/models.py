@@ -1,34 +1,38 @@
 # backend/portal/models.py
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.conf import settings
 import uuid
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+from django.db import transaction
 
 # Create your models here.
-
-# Crear un grupo de Arrendadores
-arrendadores_group, created = Group.objects.get_or_create(name='Arrendadores')
-
-# Asignar permisos al grupo
-permission = Permission.objects.get(name='Can add inmueble')
-arrendadores_group.permissions.add(permission)
 
 class Region(models.Model):
     nro_region = models.CharField(max_length=5)
     nombre = models.CharField(max_length=100, unique=True)
 
+    class Meta:
+        permissions = [
+            ("gestionar_region", "Puede gestionar regiones"),
+        ]
+
     def __str__(self):
-        return f"{self.nombre} ||| número de región es: {self.nro_region}" #Valparaiso ||| número de región es: V
+        return f"{self.nombre} ||| número de región es: {self.nro_region}"
 
 class Comuna(models.Model):
     nombre = models.CharField(max_length=50)
     region = models.ForeignKey(Region, on_delete=models.PROTECT, related_name="comunas")
 
+    class Meta:
+        permissions = [
+            ("gestionar_comuna", "Puede gestionar comunas"),
+        ]
+
     def __str__(self):
-        return f"{self.nombre} ||| número de región es: {self.region.nombre}" #Valparaiso ||| nombre de región es: Valparaiso
-    
+        return f"{self.nombre} ||| número de región es: {self.region.nombre}"
 
 # modelo de inmueble
 class Inmueble(models.Model):
@@ -50,20 +54,24 @@ class Inmueble(models.Model):
     precio_mensual = models.DecimalField(max_digits=8, decimal_places=2)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
-# CAMBIOS: Reemplazar el ForeignKey con campos para la API
     region_codigo = models.CharField(max_length=10, blank=True, null=True)
     region_nombre = models.CharField(max_length=100, blank=True, null=True)
     comuna_codigo = models.CharField(max_length=10, blank=True, null=True)
     comuna_nombre = models.CharField(max_length=100, blank=True, null=True)
-# Removemos el ForeignKey a Comuna
-#    comuna = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name="inmuebles")
     tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
+    esta_publicado = models.BooleanField(default=False)
+    
+    class Meta:
+        permissions = [
+            ("gestionar_inmueble", "Puede gestionar inmuebles"),
+            ("ver_todos_inmuebles", "Puede ver todos los inmuebles"),
+            ("publicar_inmueble", "Puede publicar inmuebles"),
+        ]
     
     def __str__(self):
         return f" {self.id} {self.propietario} {self.nombre}"
 
 class SolicitudArriendo(models.Model):
-
     class EstadoSolicitud(models.TextChoices):
         PENDIENTE = "P", _("Pendiente")
         ACEPTADA = "A", _("Aceptada")
@@ -77,19 +85,101 @@ class SolicitudArriendo(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        permissions = [
+            ("gestionar_solicitud", "Puede gestionar solicitudes de arriendo"),
+            ("aprobar_solicitud", "Puede aprobar/rechazar solicitudes"),
+        ]
+
     def __str__(self):
         return f"{self.uuid} | {self.inmueble} | {self.estado}"
 
-
 class PerfilUsuario(AbstractUser):
-
     class TipoUsuario(models.TextChoices):
         ARRENDADOR = "ARRENDADOR", _("Arrendador")
         ARRENDATARIO = "ARRENDATARIO", _("Arrendatario")
+        ADMINISTRADOR = "ADMINISTRADOR", _("Administrador")
 
     tipo_usuario = models.CharField(max_length=13, choices=TipoUsuario.choices, default=TipoUsuario.ARRENDATARIO)
     rut = models.CharField(max_length=50, unique=True, blank=True, null=True)
     imagen = models.ImageField(upload_to='foto_perfil/', default="default-profile.webp")
+    
+    # Campos adicionales para gestión
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    esta_activo = models.BooleanField(default=True)
+
+    class Meta:
+        permissions = [
+            ("gestionar_usuario", "Puede gestionar usuarios"),
+            ("ver_todos_usuarios", "Puede ver todos los usuarios"),
+        ]
 
     def __str__(self):
         return f"{self.get_full_name()} | {self.tipo_usuario}"
+
+# Señal para crear grupos y permisos automáticamente después de las migraciones
+@receiver(post_migrate)
+def crear_grupos_y_permisos(sender, **kwargs):
+    if sender.name != 'portal':
+        return
+    
+    # Crear grupos por defecto con permisos específicos
+    grupos_permisos = {
+        'Administradores': [
+            'portal.gestionar_region',
+            'portal.gestionar_comuna',
+            'portal.gestionar_inmueble',
+            'portal.ver_todos_inmuebles',
+            'portal.publicar_inmueble',
+            'portal.gestionar_solicitud',
+            'portal.aprobar_solicitud',
+            'portal.gestionar_usuario',
+            'portal.ver_todos_usuarios',
+        ],
+        'Arrendadores': [
+            'portal.gestionar_inmueble',
+            'portal.publicar_inmueble',
+            'portal.gestionar_solicitud',
+        ],
+        'Arrendatarios': [
+            'portal.ver_todos_inmuebles',
+        ]
+    }
+
+  
+    with transaction.atomic():
+        for nombre_grupo, permisos in grupos_permisos.items():
+            grupo, created = Group.objects.get_or_create(name=nombre_grupo)
+            
+            # Limpiar permisos existentes antes de asignar nuevos
+            grupo.permissions.clear()
+            
+            # Asignar permisos al grupo
+            for codigo_permiso in permisos:
+                try:
+                    # Extraer el nombre del permiso del código completo
+                    app_label, perm_codename = codigo_permiso.split('.', 1)
+                    permiso = Permission.objects.get(
+                        content_type__app_label=app_label,
+                        codename=perm_codename
+                    )
+                    grupo.permissions.add(permiso)
+                except Permission.DoesNotExist:
+                    print(f"Permiso {codigo_permiso} no encontrado")
+            
+            grupo.save()
+        
+        # Asignar usuarios a grupos según su tipo
+        for usuario in PerfilUsuario.objects.all():
+            usuario.groups.clear()  # Limpiar grupos existentes
+            
+            if usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR:
+                grupo = Group.objects.get(name='Administradores')
+                usuario.groups.add(grupo)
+            elif usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR:
+                grupo = Group.objects.get(name='Arrendadores')
+                usuario.groups.add(grupo)
+            elif usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDATARIO:
+                grupo = Group.objects.get(name='Arrendatarios')
+                usuario.groups.add(grupo)
