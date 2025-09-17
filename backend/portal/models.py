@@ -152,7 +152,8 @@ def crear_grupos_y_permisos(sender, **kwargs):
         for nombre_grupo, permisos in grupos_permisos.items():
             grupo, created = Group.objects.get_or_create(name=nombre_grupo)
             
-            # Limpiar permisos existentes antes de asignar nuevos
+            # Limpiar permisos existentes antes de asignar nuevos para evitar duplicados
+            # y asegurar que los permisos se actualicen si la lista de arriba cambia.
             grupo.permissions.clear()
             
             # Asignar permisos al grupo
@@ -166,7 +167,7 @@ def crear_grupos_y_permisos(sender, **kwargs):
                     )
                     grupo.permissions.add(permiso)
                 except Permission.DoesNotExist:
-                    print(f"Permiso {codigo_permiso} no encontrado")
+                    print(f"Permiso {codigo_permiso} no encontrado. Asegúrate de haber ejecutado las migraciones.")
             
             grupo.save()
         

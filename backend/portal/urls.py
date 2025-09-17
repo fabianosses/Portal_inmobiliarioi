@@ -24,12 +24,12 @@ from .views import (
     SolicitudArriendoListView,
     SolicitudArriendoUpdateView,
     SolicitudArriendoDeleteView,
-    PerfilUserUpdateView,
     GrupoListView, 
     GrupoUpdateView, 
     UsuarioGrupoUpdateView,
     forzar_actualizacion_grupos,
     home_view,
+    UsuarioListView,
 )
 
 urlpatterns = [
