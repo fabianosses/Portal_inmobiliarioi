@@ -39,28 +39,12 @@
                       <span class="navbar-text me-3">Hola, {{ user.get_full_name|default:user.username }}</span>
                       <a class="nav-link" href="{% url 'perfil' %}">Perfil</a>
                       <!-- Mostrar enlaces según permisos -->
-                      {% if user.has_perm "portal.gestionar_inmueble" or user.tipo_usuario == "ARRENDADOR" %}
+                        
                           <a class="nav-link" href="{% url 'inmueble_list' %}">Mis Propiedades</a>
-                      {% endif %}
+                        
                       
-                      {% if user.has_perm('portal.ver_todos_inmuebles') or user.tipo_usuario == 'ADMINISTRADOR' %}
-                          <div class="dropdown">
-                              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                  Administración
-                              </a>
-                              <ul class="dropdown-menu">
-                                  {% if user.has_perm('portal.gestionar_region') %}
-                                      <li><a class="dropdown-item" href="{% url 'region_list' %}">Regiones</a></li>
-                                  {% endif %}
-                                  {% if user.has_perm 'portal.gestionar_comuna' %}
-                                      <li><a class="dropdown-item" href="{% url 'comuna_list' %}">Comunas</a></li>
-                                  {% endif %}
-                                  {% if user.has_perm 'portal.gestionar_usuario' %}
-                                      <li><a class="dropdown-item" href="#">Usuarios</a></li>
-                                  {% endif %}
-                              </ul>
-                          </div>
-                      {% endif %}
+                      
+                      
                       <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">Cerrar Sesión</a>
                   {% else %}
                       <a class="nav-link" href="{% url 'register' %}" class="btn btn-outline-light me-2">Registrarse</a>
