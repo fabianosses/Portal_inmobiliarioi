@@ -123,64 +123,33 @@ class PerfilUsuario(AbstractUser):
 def crear_grupos_y_permisos(sender, **kwargs):
     if sender.name != 'portal':
         return
-    
-    # Crear grupos por defecto con permisos específicos
-    grupos_permisos = {
-        'Administradores': [
-            'portal.gestionar_region',
-            'portal.gestionar_comuna',
-            'portal.gestionar_inmueble',
-            'portal.ver_todos_inmuebles',
-            'portal.publicar_inmueble',
-            'portal.gestionar_solicitud',
-            'portal.aprobar_solicitud',
-            'portal.gestionar_usuario',
-            'portal.ver_todos_usuarios',
-        ],
-        'Arrendadores': [
-            'portal.gestionar_inmueble',
-            'portal.publicar_inmueble',
-            'portal.gestionar_solicitud',
-        ],
-        'Arrendatarios': [
-            'portal.ver_todos_inmuebles',
-        ]
-    }
 
-  
-    with transaction.atomic():
-        for nombre_grupo, permisos in grupos_permisos.items():
-            grupo, created = Group.objects.get_or_create(name=nombre_grupo)
-            
-            # Limpiar permisos existentes antes de asignar nuevos para evitar duplicados
-            # y asegurar que los permisos se actualicen si la lista de arriba cambia.
-            grupo.permissions.clear()
-            
-            # Asignar permisos al grupo
-            for codigo_permiso in permisos:
-                try:
-                    # Extraer el nombre del permiso del código completo
-                    app_label, perm_codename = codigo_permiso.split('.', 1)
-                    permiso = Permission.objects.get(
-                        content_type__app_label=app_label,
-                        codename=perm_codename
-                    )
-                    grupo.permissions.add(permiso)
-                except Permission.DoesNotExist:
-                    print(f"Permiso {codigo_permiso} no encontrado. Asegúrate de haber ejecutado las migraciones.")
-            
-            grupo.save()
-        
-        # Asignar usuarios a grupos según su tipo
-        for usuario in PerfilUsuario.objects.all():
-            usuario.groups.clear()  # Limpiar grupos existentes
-            
-            if usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR:
-                grupo = Group.objects.get(name='Administradores')
-                usuario.groups.add(grupo)
-            elif usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR:
-                grupo = Group.objects.get(name='Arrendadores')
-                usuario.groups.add(grupo)
-            elif usuario.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDATARIO:
-                grupo = Group.objects.get(name='Arrendatarios')
-                usuario.groups.add(grupo)
+
+############################################################################
+# Crear un grupo de Administradores
+administradores_group, created = Group.objects.get_or_create(name='Administradores')
+# Asignar permisos al grupo
+permissions = Permission.objects.filter(codename__in=[
+    'add_region', 'change_region', 'delete_region',
+    'add_comuna', 'change_comuna', 'delete_comuna',
+    'add_inmueble', 'change_inmueble', 'delete_inmueble',
+    'add_solicitudarriendo', 'change_solicitudarriendo', 'delete_solicitudarriendo',
+    'add_perfilusuario', 'change_perfilusuario', 'delete_perfilusuario',
+])
+administradores_group.permissions.set(permissions)
+
+############################################################################    
+# Crear un grupo de Arrendadores
+arrendadores_group, created = Group.objects.get_or_create(name='Arrendadores')
+
+# Asignar permisos al grupo
+permission = Permission.objects.get(name='pueden agregar inmueble')
+arrendadores_group.permissions.add(permission)
+
+############################################################################
+# Crear un grupo de Arrendatarios
+arrendatarios_group, created = Group.objects.get_or_create(name='Arrendatarios')
+
+# Asignar permisos al grupo
+permission = Permission.objects.get(name='no pueden agregar inmueble')
+arrendatarios_group.permissions.add(permission)
