@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>solicitud arriendo list</h1>
+    {% for solicitud in solicitudesarriendo %}
+        <div>
+            <h2>{{ solicitud.inmueble.nombre }}</h2>
+            <p>Solicitante: {{ solicitud.solicitante.username }}</p>
+            <p>Fecha de Solicitud: {{ solicitud.fecha_solicitud }}</p>
+            <p>Estado: {{ solicitud.estado }}</p>
+            <p>Mensaje: {{ solicitud.mensaje }}</p>
+        </div>
+    {% empty %}
+        <p>No hay solicitudes de arriendo.</p>
+    {% endfor %}
+</body>
+</html>

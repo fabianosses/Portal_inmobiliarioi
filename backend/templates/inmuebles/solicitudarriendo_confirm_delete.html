@@ -1,0 +1,6 @@
+<form action="">
+    {% csrf_token %}
+    <p>¿Estás seguro de que deseas eliminar la solicitud de arriendo "{{ object }} {{ object.estado }}"?</p>
+    <button type="submit">Confirmar</button>
+    <a href="{% url 'solicitudarriendo_list' %}">Cancelar</a>
+</form>

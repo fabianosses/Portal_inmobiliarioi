@@ -1,0 +1,7 @@
+<form method="post">
+    {% csrf_token %}
+    <p>¿Estás seguro de que deseas eliminar la región "{{ object.nombre }}"?</p>
+    {{ form }}
+    <button type="submit">Confirmar</button>
+    <a href="{% url 'region_list' %}">Cancelar</a>
+</form>

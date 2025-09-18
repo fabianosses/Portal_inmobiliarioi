@@ -1,0 +1,12 @@
+<!-- En el navbar, después del dropdown de Administración -->
+{% if user.has_perm 'portal.gestionar_usuario' %}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        Gestión de Usuarios
+    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{% url 'usuario_list' %}">Lista de Usuarios</a></li>
+        <li><a class="dropdown-item" href="{% url 'grupo_list' %}">Grupos y Permisos</a></li>
+    </ul>
+</li>
+{% endif %}
