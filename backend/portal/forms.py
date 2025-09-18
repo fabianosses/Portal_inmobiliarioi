@@ -111,6 +111,15 @@ class InmuebleForm(forms.ModelForm):
         
         return instance
 
+class ImagenInmuebleForm(forms.ModelForm):
+    class Meta:
+        model = ImagenInmueble
+        fields = ['imagen', 'descripcion', 'orden']
+        widgets = {
+            'descripcion': forms.TextInput(attrs={'placeholder': 'Descripción opcional'}),
+            'orden': forms.NumberInput(attrs={'min': '0'})
+        }
+
 class SolicitudArriendoForm(forms.ModelForm):
     class Meta:
         model = SolicitudArriendo

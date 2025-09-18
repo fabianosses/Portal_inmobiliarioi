@@ -43,7 +43,7 @@ class Inmueble(models.Model):
 
     propietario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="inmuebles", null=True, blank=True)
     nombre = models.CharField(max_length=100)
-    imagen = models.ImageField(upload_to='inmuebles/', default='sin_imagen/')
+#    imagen = models.ImageField(upload_to='inmuebles/', default='sin_imagen/')
     descripcion = models.TextField()
     m2_construidos = models.FloatField(default=0)
     m2_totales = models.FloatField(default=0)
@@ -70,6 +70,29 @@ class Inmueble(models.Model):
     
     def __str__(self):
         return f" {self.id} {self.propietario} {self.nombre}"
+    
+    @property
+    def imagen_principal(self):
+        """Devuelve la primera imagen como principal"""
+        return self.imagenes.first().imagen if self.imagenes.exists() else None
+
+class ImagenInmueble(models.Model):
+    inmueble = models.ForeignKey(
+        Inmueble, 
+        on_delete=models.CASCADE, 
+        related_name="imagenes"
+    )
+    imagen = models.ImageField(upload_to='inmuebles/galeria/')
+    descripcion = models.CharField(max_length=200, blank=True)
+    orden = models.PositiveIntegerField(default=0)  # Para ordenar imágenes
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['orden', 'creado']
+
+    def __str__(self):
+        return f"Imagen de {self.inmueble.nombre}"
+
 
 class SolicitudArriendo(models.Model):
     class EstadoSolicitud(models.TextChoices):
@@ -124,7 +147,7 @@ def crear_grupos_y_permisos(sender, **kwargs):
     if sender.name != 'portal':
         return
 
-
+"""
 ############################################################################
 # Crear un grupo de Administradores
 administradores_group, created = Group.objects.get_or_create(name='Administradores')
@@ -153,3 +176,4 @@ arrendatarios_group, created = Group.objects.get_or_create(name='Arrendatarios')
 # Asignar permisos al grupo
 permission = Permission.objects.get(name='no pueden agregar inmueble')
 arrendatarios_group.permissions.add(permission)
+"""

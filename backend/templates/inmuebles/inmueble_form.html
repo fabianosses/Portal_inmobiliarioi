@@ -1,15 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>inmueble form</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Guardar</button>
-</body>
-</html>
+<!-- backend/templates/inmuebles/inmueble_form.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar Inmueble</h2>
+
+<!-- Formulario principal del inmueble -->
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar cambios</button>
+</form>
+
+<hr>
+
+<h3>Galería de imágenes</h3>
+
+<!-- Lista de imágenes existentes -->
+<div class="row">
+    {% for imagen in object.imagenes.all %}
+    <div class="col-md-3 mb-3">
+        <img src="{{ imagen.imagen.url }}" class="img-thumbnail" alt="{{ imagen.descripcion }}">
+        <p>{{ imagen.descripcion }}</p>
+        <a href="{% url 'eliminar_imagen' imagen.pk %}" class="btn btn-danger btn-sm" 
+           onclick="return confirm('¿Estás seguro de eliminar esta imagen?')">
+            Eliminar
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Botón para agregar nueva imagen -->
+<a href="{% url 'agregar_imagen' object.pk %}" class="btn btn-primary">
+    Agregar nueva imagen
+</a>
+
+{% endblock %}

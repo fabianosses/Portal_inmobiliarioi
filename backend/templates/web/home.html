@@ -134,14 +134,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card shadow-sm h-100">
               <img src="{{ i.imagen_url|default:'https://picsum.photos/400/250?random=2' }}" class="card-img-top" alt="Propiedad {{ forloop.counter }}">
               <div class="card-body">
-                <h5 class="card-title">{{ i.titulo }}</h5>
+                <h5 class="card-title">{{ i.nombre }}</h5>
                 <p class="card-text">{{ i.descripcion }}</p>
                 <ul class="list-unstyled small">
-                  <li><strong>Construidos:</strong> {{ i.metros_construidos }} m²</li>
-                  <li><strong>Totales:</strong> {{ i.metros_totales }} m²</li>
-                  <li><strong>Baños:</strong> {{ i.banos }}</li>
-                  <li><strong>Piezas:</strong> {{ i.piezas }}</li>
-                  <li><strong>Estacionamiento:</strong> {{ i.estacionamiento }}</li>
+                    <li><strong>Construidos:</strong> {{ i.m2_construidos }} m²</li>
+                    <li><strong>Totales:</strong> {{ i.m2_totales }} m²</li>
+                    <li><strong>Baños:</strong> {{ i.banos }}</li>
+                    <li><strong>Habitaciones:</strong> {{ i.habitaciones }}</li>
+                    <li><strong>Estacionamientos:</strong> {{ i.estacionamientos }}</li>
                 </ul>
                 <p class="card-price">${{ i.precio }} / mes</p>
                 <a href="{% url 'solicitud_create' i.id %}" class="btn btn-outline-primary w-100">Solicitar Arrendamiento</a>

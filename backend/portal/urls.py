@@ -30,6 +30,8 @@ from .views import (
     forzar_actualizacion_grupos,
     home_view,
     UsuarioListView,
+    ImagenInmuebleCreateView,
+    ImagenInmuebleDeleteView,
 )
 
 urlpatterns = [
@@ -90,4 +92,10 @@ urlpatterns = [
     path('grupos/<int:pk>/editar/', GrupoUpdateView.as_view(), name='grupo_update'),
     path('usuarios/<int:pk>/grupos/', UsuarioGrupoUpdateView.as_view(), name='usuario_grupo_update'),
     path('grupos/forzar-actualizacion/', forzar_actualizacion_grupos, name='forzar_actualizacion_grupos'),
+
+##########################################################################
+    # Imagen inmueble
+    path('inmueble/<int:inmueble_pk>/agregar-imagen/', ImagenInmuebleCreateView.as_view(), name='agregar_imagen'),
+    path('imagen/<int:pk>/eliminar/', ImagenInmuebleDeleteView.as_view(), name='eliminar_imagen'),
+
 ]

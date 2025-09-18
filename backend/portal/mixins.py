@@ -1,7 +1,8 @@
 # backend/portal/mixins.py
-from django.contrib.auth.mixins import UserPassesTestMixin, AccessMixin
+from django.contrib.auth.mixins import UserPassesTestMixin, AccessMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from .models import PerfilUsuario
 
 class PermisoRequeridoMixin(UserPassesTestMixin):
     """Mixin para verificar permisos específicos"""
@@ -35,11 +36,18 @@ class PermisoRequeridoMixin(UserPassesTestMixin):
         return redirect('login')
 
 # Mixins específicos para permisos comunes
-class PuedeGestionarInmueblesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_inmueble'
+class PuedeGestionarInmueblesMixin(UserPassesTestMixin):
+    def test_func(self):
+        user = self.request.user
+        # Administradores y arrendadores pueden gestionar inmuebles
+        return (user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR or 
+                user.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR)
 
-class PuedeVerTodosInmueblesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.ver_todos_inmuebles'
+class PuedeVerTodosInmueblesMixin(UserPassesTestMixin):
+    def test_func(self):
+        user = self.request.user
+        # Administradores pueden ver todos los inmuebles
+        return user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR
 
 class PuedeGestionarSolicitudesMixin(PermisoRequeridoMixin):
     permiso_requerido = 'portal.gestionar_solicitud'
@@ -47,8 +55,11 @@ class PuedeGestionarSolicitudesMixin(PermisoRequeridoMixin):
 class PuedeAprobarSolicitudesMixin(PermisoRequeridoMixin):
     permiso_requerido = 'portal.aprobar_solicitud'
 
-class PuedeGestionarUsuariosMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_usuario'
+class PuedeGestionarUsuariosMixin(UserPassesTestMixin):
+    def test_func(self):
+        user = self.request.user
+        # Solo administradores pueden gestionar usuarios
+        return user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR
 
 class PuedeVerTodosUsuariosMixin(PermisoRequeridoMixin):
     permiso_requerido = 'portal.ver_todos_usuarios'
@@ -60,8 +71,9 @@ class PuedeGestionarComunasMixin(PermisoRequeridoMixin):
     permiso_requerido = 'portal.gestionar_comuna'
 
 # Mixins por tipo de usuario
-class EsAdministradorMixin(PermisoRequeridoMixin):
-    tipo_usuario_requerido = 'ADMINISTRADOR'
+class EsAdministradorMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR
 
 class EsArrendadorMixin(PermisoRequeridoMixin):
     tipo_usuario_requerido = 'ARRENDADOR'
@@ -78,3 +90,11 @@ class GrupoArrendadoresMixin(PermisoRequeridoMixin):
 
 class GrupoArrendatariosMixin(PermisoRequeridoMixin):
     grupo_requerido = 'Arrendatarios'
+
+class EsArrendadorMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR
+
+class EsArrendatarioMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDATARIO

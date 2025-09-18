@@ -1,8 +1,8 @@
 # backend/portal/views.py
 
 from django.db import transaction
-from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -12,8 +12,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
-from django.shortcuts import get_object_or_404
-from django.urls import reverse
 from .forms import LoginForm, RegisterForm
 from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
@@ -30,7 +28,8 @@ from .models import (
     Comuna,
     Inmueble,
     SolicitudArriendo,
-    PerfilUsuario
+    PerfilUsuario,
+    ImagenInmueble,
 )
 
 from .forms import (
@@ -38,7 +37,8 @@ from .forms import (
     ComunaForm,
     InmuebleForm,
     SolicitudArriendoForm,
-    PerfilUsuarioForm
+    PerfilUsuarioForm,
+    ImagenInmuebleForm,
 )
 
 from django.views.generic import (
@@ -225,16 +225,16 @@ class InmueblesListView(PermisoRequeridoMixin, ListView):
 
 
 class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
+    # Solo arrendadores pueden crear inmuebles
     model = Inmueble
-    template_name = 'inmuebles/inmueble_form.html'
     form_class = InmuebleForm
     success_url = reverse_lazy('inmueble_list')
     
     def form_valid(self, form):
-        form.instance.propietario = self.request.user
-        # Puedes añadir lógica para "publicar" el inmueble si el usuario tiene el permiso
-        if self.request.user.has_perm('portal.publicar_inmueble'):
-            form.instance.esta_publicado = True
+        # Si es arrendador, se asigna como propietario
+        if self.request.user.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR:
+            form.instance.propietario = self.request.user
+        # Los administradores pueden elegir el propietario en el formulario
         return super().form_valid(form)
 
 class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):
@@ -246,10 +246,13 @@ class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        # Si no es administrador, solo puede editar sus propios inmuebles
-        if not (user.is_superuser or user.has_perm('portal.ver_todos_inmuebles')): # 'is_superuser' para cubrir el admin por defecto
-            queryset = queryset.filter(propietario=user)
-        return queryset
+        
+        # Administradores pueden editar todos los inmuebles
+        if user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR:
+            return queryset
+        
+        # Arrendadores solo pueden editar sus inmuebles
+        return queryset.filter(propietario=user)
 
     def form_valid(self, form):
         # Permiso para publicar/despublicar
@@ -272,6 +275,55 @@ class InmuebleDeleteView(PuedeGestionarInmueblesMixin, DeleteView):
         if not (user.is_superuser or user.has_perm('portal.ver_todos_inmuebles')):
             queryset = queryset.filter(propietario=user)
         return queryset
+
+##################################################################
+# IMAGEN INMUEBLE
+##################################################################
+
+from django.views.generic import CreateView, DeleteView
+from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+class ImagenInmuebleCreateView(EsArrendadorMixin, CreateView):
+    model = ImagenInmueble
+    form_class = ImagenInmuebleForm
+    template_name = 'inmuebles/imagen_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.inmueble = get_object_or_404(Inmueble, pk=kwargs['inmueble_pk'])
+        # Verificar que el usuario es el propietario del inmueble
+        if self.inmueble.propietario != request.user:
+            raise PermissionDenied("No tienes permiso para agregar imágenes a este inmueble")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['inmueble'] = self.inmueble
+        return context
+    
+    def form_valid(self, form):
+        form.instance.inmueble = self.inmueble
+        messages.success(self.request, 'Imagen agregada correctamente.')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('actualizar_inmueble', kwargs={'pk': self.inmueble.pk})
+
+class ImagenInmuebleDeleteView(EsArrendadorMixin, DeleteView):
+    model = ImagenInmueble
+    template_name = 'inmuebles/imagen_confirm_delete.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Verificar que el usuario es el propietario del inmueble
+        imagen = self.get_object()
+        if imagen.inmueble.propietario != request.user:
+            raise PermissionDenied("No tienes permiso para eliminar esta imagen")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Imagen eliminada correctamente.')
+        return reverse_lazy('actualizar_inmueble', kwargs={'pk': self.object.inmueble.pk})
 
 #########################################################
 #CRUD SOLICITUD ARRIENDO
