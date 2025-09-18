@@ -1,0 +1,13 @@
+<!-- backend/templates/usuarios/usuario_form.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar Usuario</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% url 'usuario_list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

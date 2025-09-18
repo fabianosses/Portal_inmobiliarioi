@@ -25,6 +25,19 @@
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
               <span class="navbar-toggler-icon"></span>
           </button>
+          <!-- En el navbar -->
+            {% if user.tipo_usuario == 'ADMINISTRADOR' or user.is_superuser %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    Administración
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'usuario_list' %}">Usuarios</a></li>
+                    <li><a class="dropdown-item" href="{% url 'inmueble_list' %}">Todos los Inmuebles</a></li>
+                    <li><a class="dropdown-item" href="{% url 'solicitud_list' %}">Todas las Solicitudes</a></li>
+                </ul>
+            </li>
+            {% endif %}
           <div class="collapse navbar-collapse" id="navbarNav">
               <ul class="navbar-nav ms-auto me-3">
                   <li class="nav-item"><a class="nav-link active" href="{% url 'home' %}">Inicio</a></li>

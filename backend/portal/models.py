@@ -147,6 +147,34 @@ def crear_grupos_y_permisos(sender, **kwargs):
     if sender.name != 'portal':
         return
 
+    # Crear grupos con permisos
+    grupos_permisos = {
+        'Administradores': [
+            'add_inmueble', 'change_inmueble', 'delete_inmueble',
+            'view_inmueble', 'add_perfilusuario', 'change_perfilusuario',
+            'delete_perfilusuario', 'view_perfilusuario',
+            'add_solicitudarriendo', 'change_solicitudarriendo',
+            'delete_solicitudarriendo', 'view_solicitudarriendo'
+        ],
+        'Arrendadores': [
+            'add_inmueble', 'change_inmueble', 'delete_inmueble',
+            'view_inmueble', 'view_solicitudarriendo', 'change_solicitudarriendo'
+        ],
+        'Arrendatarios': [
+            'view_inmueble', 'add_solicitudarriendo', 'change_solicitudarriendo',
+            'delete_solicitudarriendo', 'view_solicitudarriendo'
+        ]
+    }
+
+    for nombre_grupo, permisos in grupos_permisos.items():
+        grupo, created = Group.objects.get_or_create(name=nombre_grupo)
+        for permiso_codename in permisos:
+            try:
+                permiso = Permission.objects.get(codename=permiso_codename)
+                grupo.permissions.add(permiso)
+            except Permission.DoesNotExist:
+                continue
+
 """
 ############################################################################
 # Crear un grupo de Administradores

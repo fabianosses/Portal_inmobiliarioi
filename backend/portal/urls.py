@@ -32,6 +32,8 @@ from .views import (
     UsuarioListView,
     ImagenInmuebleCreateView,
     ImagenInmuebleDeleteView,
+    UsuarioUpdateView,
+    UsuarioDeleteView,
 )
 
 urlpatterns = [
@@ -97,5 +99,11 @@ urlpatterns = [
     # Imagen inmueble
     path('inmueble/<int:inmueble_pk>/agregar-imagen/', ImagenInmuebleCreateView.as_view(), name='agregar_imagen'),
     path('imagen/<int:pk>/eliminar/', ImagenInmuebleDeleteView.as_view(), name='eliminar_imagen'),
+
+##########################################################################
+    # URLs para gestión de usuarios
+    path('usuarios/', UsuarioListView.as_view(), name='usuario_list'),
+    path('usuarios/<int:pk>/editar/', UsuarioUpdateView.as_view(), name='usuario_update'),
+    path('usuarios/<int:pk>/eliminar/', UsuarioDeleteView.as_view(), name='usuario_delete'),
 
 ]

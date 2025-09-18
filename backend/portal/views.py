@@ -58,15 +58,37 @@ def cargar_comunas(request):
     return JsonResponse([], safe=False)
 
 ##########################################################
-# CRUD GRUPOS Y USUARIOS
+# CRUD USUARIOS
 ##########################################################  
 
-# Nueva vista para listar usuarios
+# Vistas de Usuarios - Solo administradores
 class UsuarioListView(PuedeGestionarUsuariosMixin, ListView):
     model = PerfilUsuario
     template_name = 'usuarios/usuario_list.html'
     context_object_name = 'usuarios'
-    permission_required = 'portal.gestionar_usuario'
+
+class UsuarioUpdateView(PuedeGestionarUsuariosMixin, UpdateView):
+    model = PerfilUsuario
+    template_name = 'usuarios/usuario_form.html'
+    fields = ['username', 'first_name', 'last_name', 'email', 'rut', 'tipo_usuario', 'is_active']
+    success_url = reverse_lazy('usuario_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Usuario {form.instance.username} actualizado correctamente.')
+        return super().form_valid(form)
+    
+class UsuarioDeleteView(PuedeGestionarUsuariosMixin, DeleteView):
+    model = PerfilUsuario
+    template_name = 'usuarios/usuario_confirm_delete.html'
+    success_url = reverse_lazy('usuario_list')
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Usuario eliminado correctamente.')
+        return super().delete(request, *args, **kwargs)
+
+###########################################################
+# CRUD GRUPOS
+###########################################################
 
 class GrupoListView(PuedeGestionarUsuariosMixin, ListView):
     model = Group
@@ -237,6 +259,11 @@ class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
         # Los administradores pueden elegir el propietario en el formulario
         return super().form_valid(form)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
 class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):
     model = Inmueble
     template_name = 'inmuebles/inmueble_form.html'
@@ -271,10 +298,13 @@ class InmuebleDeleteView(PuedeGestionarInmueblesMixin, DeleteView):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        # Si no es administrador, solo puede eliminar sus propios inmuebles
-        if not (user.is_superuser or user.has_perm('portal.ver_todos_inmuebles')):
-            queryset = queryset.filter(propietario=user)
-        return queryset
+        
+        # Administradores pueden eliminar todos los inmuebles
+        if user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR:
+            return queryset
+        
+        # Arrendadores solo pueden eliminar sus inmuebles
+        return queryset.filter(propietario=user)
 
 ##################################################################
 # IMAGEN INMUEBLE

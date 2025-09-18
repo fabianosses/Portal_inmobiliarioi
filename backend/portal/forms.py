@@ -111,6 +111,20 @@ class InmuebleForm(forms.ModelForm):
         
         return instance
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si no es administrador, ocultar el campo de propietario
+        if self.user and self.user.tipo_usuario != PerfilUsuario.TipoUsuario.ADMINISTRADOR:
+            del self.fields['propietario']
+        else:
+            # Para administradores, filtrar solo usuarios que pueden ser propietarios
+            self.fields['propietario'].queryset = PerfilUsuario.objects.filter(
+                tipo_usuario__in=[PerfilUsuario.TipoUsuario.ADMINISTRADOR, 
+                                 PerfilUsuario.TipoUsuario.ARRENDADOR]
+            )
+
 class ImagenInmuebleForm(forms.ModelForm):
     class Meta:
         model = ImagenInmueble
