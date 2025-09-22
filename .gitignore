@@ -1,3 +1,19 @@
+# Archivos de entorno
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Variables de entorno específicas
+*.env
+
+# También otros archivos sensibles
+config.py
+settings.py
+keys.json
+secrets/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
