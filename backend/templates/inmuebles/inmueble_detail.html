@@ -1,0 +1,166 @@
+<!-- templates/inmuebles/inmueble_detail.html -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ inmueble.nombre }} - Inmobiliaria Conecta{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'inmueble_list' %}">Propiedades</a></li>
+            <li class="breadcrumb-item active">{{ inmueble.nombre }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Galería de imágenes -->
+        <div class="col-lg-8">
+            <div class="property-gallery mb-4">
+                <!-- Imagen principal -->
+                <div class="main-image mb-3">
+                    <img src="{{ inmueble.imagen_principal }}" class="img-fluid rounded" alt="{{ inmueble.nombre }}" id="mainImage">
+                </div>
+                
+                <!-- Miniaturas -->
+                <div class="thumbnails d-flex gap-2">
+                    {% for imagen in inmueble.imagenes.all %}
+                    <img src="{{ imagen.imagen.url }}" class="thumbnail img-thumbnail" 
+                         width="80" alt="Imagen {{ forloop.counter }}" 
+                         onclick="changeMainImage('{{ imagen.imagen.url }}')">
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Información detallada -->
+            <div class="property-details card">
+                <div class="card-body">
+                    <h1 class="card-title h2">{{ inmueble.nombre }}</h1>
+                    <p class="text-muted">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ inmueble.direccion }}, {{ inmueble.comuna_nombre }}, {{ inmueble.region_nombre }}
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-primary mb-0">${{ inmueble.precio_mensual|floatformat:0 }} / mes</h3>
+                        <span class="badge bg-{% if inmueble.esta_publicado %}success{% else %}warning{% endif %}">
+                            {{ inmueble.esta_publicado|yesno:"Disponible,No disponible" }}
+                        </span>
+                    </div>
+                    
+                    <!-- Características -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-home me-2"></i>Tipo de propiedad</span>
+                                    <span class="fw-bold">{{ inmueble.get_tipo_inmueble_display }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-bed me-2"></i>Habitaciones</span>
+                                    <span class="fw-bold">{{ inmueble.habitaciones }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-bath me-2"></i>Baños</span>
+                                    <span class="fw-bold">{{ inmueble.banos }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-car me-2"></i>Estacionamientos</span>
+                                    <span class="fw-bold">{{ inmueble.estacionamientos }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-ruler-combined me-2"></i>m² construidos</span>
+                                    <span class="fw-bold">{{ inmueble.m2_construidos }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-expand me-2"></i>m² totales</span>
+                                    <span class="fw-bold">{{ inmueble.m2_totales }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Descripción -->
+                    <div class="mb-4">
+                        <h4>Descripción</h4>
+                        <p class="card-text">{{ inmueble.descripcion|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Información de contacto y acciones -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 100px;">
+                <!-- Card de contacto/propietario -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Información de Contacto</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="{{ inmueble.propietario.imagen.url|default:'/media/default-profile.webp' }}" 
+                                 class="rounded-circle me-3" width="50" height="50" alt="Propietario">
+                            <div>
+                                <h6 class="mb-0">{{ inmueble.propietario.get_full_name }}</h6>
+                                <small class="text-muted">Propietario</small>
+                            </div>
+                        </div>
+                        
+                        {% if user.is_authenticated and user != inmueble.propietario %}
+                        <a href="{% url 'solicitud_create' inmueble.pk %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-envelope me-2"></i>Solicitar Información
+                        </a>
+                        {% endif %}
+                        
+                        {% if user == inmueble.propietario or user.tipo_usuario == 'ADMINISTRADOR' %}
+                        <div class="btn-group w-100">
+                            <a href="{% url 'actualizar_inmueble' inmueble.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Editar
+                            </a>
+                            <a href="{% url 'agregar_imagen' inmueble.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-image me-2"></i>Imágenes
+                            </a>
+                            <a href="{% url 'borrar_inmueble' inmueble.pk %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash me-2"></i>Eliminar
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Mapa de ubicación -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Ubicación</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="map" style="height: 200px; background-color: #eee;" class="rounded-bottom">
+                            <!-- Aquí iría un mapa con la ubicación -->
+                            <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                {{ inmueble.comuna_nombre }}, {{ inmueble.region_nombre }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeMainImage(src) {
+    document.getElementById('mainImage').src = src;
+}
+</script>
+{% endblock %}

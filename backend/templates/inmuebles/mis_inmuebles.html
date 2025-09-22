@@ -1,0 +1,170 @@
+<!-- backend/templates/inmuebles/mis_inmuebles.html -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Propiedades - Inmobiliaria Conecta{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mis Propiedades</h1>
+        <a href="{% url 'inmueble_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nueva Propiedad
+        </a>
+    </div>
+
+    <!-- Filtros y búsqueda -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar propiedades..." 
+                           value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="estado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option value="publicado" {% if request.GET.estado == 'publicado' %}selected{% endif %}>Publicados</option>
+                        <option value="no_publicado" {% if request.GET.estado == 'no_publicado' %}selected{% endif %}>No publicados</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        {% for tipo_value, tipo_name in tipos_inmueble %}
+                        <option value="{{ tipo_value }}" {% if request.GET.tipo == tipo_value %}selected{% endif %}>
+                            {{ tipo_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-filter me-1"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_propiedades }}</h5>
+                    <p class="card-text">Total Propiedades</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ propiedades_publicadas }}</h5>
+                    <p class="card-text">Publicadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ propiedades_no_publicadas }}</h5>
+                    <p class="card-text">No Publicadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_solicitudes }}</h5>
+                    <p class="card-text">Solicitudes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de propiedades -->
+    <div class="row">
+        {% for inmueble in inmuebles %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="position-relative">
+                    <img src="{{ inmueble.imagen_principal }}" class="card-img-top" alt="{{ inmueble.nombre }}" style="height: 200px; object-fit: cover;">
+                    <span class="position-absolute top-0 end-0 m-2 badge bg-{% if inmueble.esta_publicado %}success{% else %}warning{% endif %}">
+                        {{ inmueble.esta_publicado|yesno:"Publicado,No publicado" }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ inmueble.nombre }}</h5>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ inmueble.comuna_nombre }}, {{ inmueble.region_nombre }}
+                    </p>
+                    <p class="card-text">
+                        <span class="fw-bold text-primary">${{ inmueble.precio_mensual|floatformat:0 }}/mes</span>
+                    </p>
+                    <div class="d-flex justify-content-between small text-muted mb-2">
+                        <span><i class="fas fa-bed me-1"></i>{{ inmueble.habitaciones }} hab.</span>
+                        <span><i class="fas fa-bath me-1"></i>{{ inmueble.banos }} baños</span>
+                        <span><i class="fas fa-car me-1"></i>{{ inmueble.estacionamientos }} est.</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'inmueble_detail' inmueble.pk %}" class="btn btn-outline-primary btn-sm">
+                            Ver Detalles
+                        </a>
+                        <div class="btn-group">
+                            <a href="{% url 'actualizar_inmueble' inmueble.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'agregar_imagen' inmueble.pk %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-images"></i>
+                            </a>
+                            <a href="{% url 'solicitud_list' %}?inmueble={{ inmueble.pk }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-home display-1 text-muted mb-3"></i>
+            <h4 class="text-muted">No tienes propiedades registradas</h4>
+            <p>Comienza publicando tu primera propiedad</p>
+            <a href="{% url 'inmueble_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Publicar Primera Propiedad
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Anterior</a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

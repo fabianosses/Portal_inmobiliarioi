@@ -29,16 +29,25 @@ from .views import (
     UsuarioGrupoUpdateView,
     forzar_actualizacion_grupos,
     home_view,
+    acerca_view,
+    contacto_view,
+    faq_view,
+    terminos_view,
     UsuarioListView,
     ImagenInmuebleCreateView,
     ImagenInmuebleDeleteView,
     UsuarioUpdateView,
     UsuarioDeleteView,
+    PerfilJsonView,
 )
 
 urlpatterns = [
 
     path('', home_view, name='home'),
+    path('acerca/', acerca_view, name='acerca'),
+    path('contacto/', contacto_view, name='contacto'),
+    path('faq/', faq_view, name='faq'),
+    path('terminos/', terminos_view, name='terminos'),
 
     # region
     path('listar_regiones/', RegionListView.as_view(), name='region_list'),
@@ -71,6 +80,7 @@ urlpatterns = [
     # perfil usuario
     path('actualizar_perfil/<int:pk>', PerfilUserUpdateView.as_view(), name='perfil_update'),
     path('perfil/', PerfilView.as_view(), name='perfil'),
+    path('api/perfil/', PerfilJsonView.as_view(), name='api_perfil'),
 
 #########################################################################
     # autenticación
@@ -99,6 +109,7 @@ urlpatterns = [
     # Imagen inmueble
     path('inmueble/<int:inmueble_pk>/agregar-imagen/', ImagenInmuebleCreateView.as_view(), name='agregar_imagen'),
     path('imagen/<int:pk>/eliminar/', ImagenInmuebleDeleteView.as_view(), name='eliminar_imagen'),
+    path('mis-inmuebles/', InmueblesListView.as_view(), name='mis_inmuebles'),
 
 ##########################################################################
     # URLs para gestión de usuarios

@@ -2,6 +2,8 @@
 
 from django.db import transaction
 from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -14,8 +16,8 @@ from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 from .forms import LoginForm, RegisterForm
 from django.views.decorators.csrf import csrf_protect
-from django.http import JsonResponse
 from .services import ChileanLocationService
+from django.views.decorators.csrf import csrf_exempt
 from .mixins import (
     PermisoRequeridoMixin, PuedeGestionarInmueblesMixin, PuedeVerTodosInmueblesMixin,
     PuedeGestionarSolicitudesMixin, PuedeAprobarSolicitudesMixin, PuedeGestionarUsuariosMixin,
@@ -533,6 +535,22 @@ class PerfilView(UpdateView): # Aquí debería ser DetailView o una View combina
         })
         return ctx
 
+@method_decorator(csrf_exempt, name='dispatch')
+class PerfilJsonView(LoginRequiredMixin, View):
+    def get(self, request):
+        user = request.user
+        data = {
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'rut': user.rut,
+            'tipo_usuario': user.tipo_usuario,
+            'tipo_usuario_display': user.get_tipo_usuario_display(),
+            'fecha_registro': user.date_joined.strftime('%d/%m/%Y'),
+            'imagen_url': user.imagen.url if user.imagen else '/media/default-profile.webp'
+        }
+        return JsonResponse(data)
 
 #login/logout/register
 ##########################################################
@@ -608,5 +626,105 @@ class CustomLogoutView(LogoutView):
 #########################################################
 # Esta vista mostrará las propiedades destacadas para todos los usuarios.
 def home_view(request):
-    inmuebles = Inmueble.objects.filter(esta_publicado=True)
-    return render(request, 'web/home.html', {'inmuebles': inmuebles})
+    inmuebles = Inmueble.objects.filter(esta_publicado=True)[:6]  # Limita a 6 propiedades
+    context = {
+        'inmuebles_destacados': inmuebles,
+        'total_propiedades': Inmueble.objects.filter(esta_publicado=True).count(),
+        'total_usuarios': PerfilUsuario.objects.count(),
+        'total_regiones': Region.objects.count(),
+        'total_solicitudes': SolicitudArriendo.objects.count(),
+    }
+    return render(request, 'web/home.html', context)
+
+########################################################
+# Vista para la página de acerca de
+#########################################################
+# Esta vista mostrará las propiedades destacadas para todos los usuarios.
+def acerca_view(request):
+    """
+    Vista para la página 'Acerca de'.
+    Muestra información sobre la empresa.
+    """
+    context = {
+        'titulo': 'Acerca de Nosotros',
+        'parrafo1': 'Nuestra historia comenzó en 2024 con la visión de revolucionar el mercado de bienes raíces. Desde entonces, nos hemos dedicado a conectar a arrendadores y arrendatarios de manera eficiente, transparente y segura.',
+        'parrafo2': 'Creemos firmemente en el poder de la tecnología para simplificar procesos complejos. Nuestra plataforma está diseñada para ofrecer una experiencia de usuario fluida, permitiendo a los usuarios encontrar el hogar perfecto o el inquilino ideal con tan solo unos clics.',
+        'parrafo3': 'Enfocados en la innovación, estamos en constante evolución para adaptarnos a las necesidades del mercado, asegurando que nuestros servicios sean siempre de la más alta calidad y superen las expectativas de nuestros clientes.'
+    }
+    return render(request, 'paginas/acerca.html', context)
+
+########################################################
+# Vista para la página de contacto
+#########################################################
+
+def contacto_view(request):
+    """
+    Vista para la página de contacto.
+    Muestra un formulario de contacto y maneja su envío.
+    """
+    if request.method == 'POST':
+        # Aquí manejarías el envío del formulario, validación, etc.
+        messages.success(request, 'Gracias por contactarnos. Te responderemos pronto.')
+        return redirect('contacto')
+    
+    context = {
+        'titulo': 'Contáctanos',
+        'parrafo1': 'Si tienes alguna pregunta, comentario o necesitas asistencia, no dudes en ponerte en contacto con nosotros. Estamos aquí para ayudarte.',
+        'parrafo2': 'Puedes enviarnos un correo electrónico a inmobiliaria@inmobiliaria.cl o llamarnos al +56 9 1234 5678. Nuestro horario de atención es de lunes a viernes, de 9:00 a 18:00 horas.',
+        'parrafo3': 'También puedes utilizar el formulario a continuación para enviarnos un mensaje directamente desde nuestro sitio web. Nos comprometemos a responder a todas las consultas en un plazo de 24 a 48 horas hábiles.'
+    }
+    return render(request, 'paginas/contacto.html', context)
+
+########################################################
+# Vista para la página de preguntas frecuentes
+#########################################################
+
+def faq_view(request):
+    """
+    Vista para la página de preguntas frecuentes (FAQ).
+    Muestra una lista de preguntas y respuestas comunes.
+    """
+    faqs = [
+        {
+            'pregunta': '¿Cómo puedo crear una cuenta?',
+            'respuesta': 'Puedes crear una cuenta haciendo clic en el botón "Registrarse" en la esquina superior derecha y completando el formulario de registro.'
+        },
+        {
+            'pregunta': '¿Cómo puedo listar mi propiedad?',
+            'respuesta': 'Después de iniciar sesión, ve a "Mis Inmuebles" y haz clic en "Agregar Nuevo Inmueble". Completa los detalles y guarda.'
+        },
+        {
+            'pregunta': '¿Cómo puedo solicitar el arriendo de una propiedad?',
+            'respuesta': 'Navega por las propiedades disponibles y haz clic en "Solicitar Arriendo" en la propiedad que te interesa. Completa el formulario de solicitud.'
+        },
+        {
+            'pregunta': '¿Qué hago si olvido mi contraseña?',
+            'respuesta': 'Haz clic en "¿Olvidaste tu contraseña?" en la página de inicio de sesión y sigue las instrucciones para restablecerla.'
+        },
+        {
+            'pregunta': '¿Cómo puedo contactar al soporte?',
+            'respuesta': 'Puedes contactarnos a través de la página de contacto o enviando un correo a inmobiliaria@inmobiliaria.cl.'
+        },
+    ]
+    context = {
+        'titulo': 'Preguntas Frecuentes',
+        'faqs': faqs
+    }
+    return render(request, 'paginas/faq.html', context)
+
+########################################################
+# Vista para la página de términos y condiciones
+#########################################################
+
+def terminos_view(request):
+    """
+    Vista para la página de términos y condiciones.
+    Muestra los términos legales del uso del sitio web.
+    """
+    context = {
+        'titulo': 'Términos y Condiciones',
+        'parrafo1': 'Al utilizar nuestro sitio web, aceptas cumplir con estos términos y condiciones. Si no estás de acuerdo con alguno de estos términos, por favor no utilices nuestro sitio.',
+        'parrafo2': 'Nos reservamos el derecho de modificar estos términos en cualquier momento. Cualquier cambio será efectivo inmediatamente después de su publicación en el sitio web. Es tu responsabilidad revisar los términos periódicamente.',
+        'parrafo3': 'El contenido de este sitio web es solo para fines informativos y no constituye asesoramiento legal. No garantizamos la exactitud o integridad de la información proporcionada.'
+    }
+    return render(request, 'paginas/terminos.html', context)
