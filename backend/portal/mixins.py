@@ -1,13 +1,9 @@
-# backend/portal/mixins.py
-from django.contrib.auth.mixins import UserPassesTestMixin, AccessMixin
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 
 class PermisoRequeridoMixin(UserPassesTestMixin):
-    """Mixin para verificar permisos específicos"""
-    permiso_requerido = None
-    grupo_requerido = None
-    tipo_usuario_requerido = None
+    """Mixin base para verificar permisos"""
     
     def test_func(self):
         user = self.request.user
@@ -15,17 +11,17 @@ class PermisoRequeridoMixin(UserPassesTestMixin):
         if not user.is_authenticated:
             return False
         
-        # Verificar permiso específico
-        if self.permiso_requerido and not user.has_perm(self.permiso_requerido):
-            return False
+        # Verificar permisos específicos
+        permisos_requeridos = getattr(self, 'permisos_requeridos', [])
+        if permisos_requeridos:
+            if not any(user.has_perm(permiso) for permiso in permisos_requeridos):
+                return False
         
-        # Verificar grupo
-        if self.grupo_requerido and not user.groups.filter(name=self.grupo_requerido).exists():
-            return False
-        
-        # Verificar tipo de usuario
-        if self.tipo_usuario_requerido and user.tipo_usuario != self.tipo_usuario_requerido:
-            return False
+        # Verificar grupos
+        grupos_requeridos = getattr(self, 'grupos_requeridos', [])
+        if grupos_requeridos:
+            if not user.groups.filter(name__in=grupos_requeridos).exists():
+                return False
         
         return True
     
@@ -34,47 +30,55 @@ class PermisoRequeridoMixin(UserPassesTestMixin):
             raise PermissionDenied("No tienes permisos para acceder a esta página")
         return redirect('login')
 
-# Mixins específicos para permisos comunes
+# Mixins específicos actualizados
 class PuedeGestionarInmueblesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_inmueble'
+    permisos_requeridos = ['portal.agregar_inmueble', 'portal.ver_todos_inmuebles']
+    grupos_requeridos = ['Arrendadores', 'Administradores']
 
 class PuedeVerTodosInmueblesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.ver_todos_inmuebles'
+    permisos_requeridos = ['portal.ver_todos_inmuebles']
+    grupos_requeridos = ['Administradores']
 
 class PuedeGestionarSolicitudesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_solicitud'
+    permisos_requeridos = ['portal.gestionar_solicitud']
 
 class PuedeAprobarSolicitudesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.aprobar_solicitud'
+    permisos_requeridos = ['portal.aprobar_solicitud']
 
 class PuedeGestionarUsuariosMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_usuario'
-
-class PuedeVerTodosUsuariosMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.ver_todos_usuarios'
+    permisos_requeridos = ['portal.gestionar_usuario']
+    grupos_requeridos = ['Administradores']
 
 class PuedeGestionarRegionesMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_region'
+    permisos_requeridos = ['portal.gestionar_region']
+    grupos_requeridos = ['Administradores']
 
 class PuedeGestionarComunasMixin(PermisoRequeridoMixin):
-    permiso_requerido = 'portal.gestionar_comuna'
+    permisos_requeridos = ['portal.gestionar_comuna']
+    grupos_requeridos = ['Administradores']
 
-# Mixins por tipo de usuario
+# Mixins por tipo de usuario (basados en el campo tipo_usuario del modelo)
 class EsAdministradorMixin(PermisoRequeridoMixin):
-    tipo_usuario_requerido = 'ADMINISTRADOR'
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.tipo_usuario == 'ADMINISTRADOR'
 
 class EsArrendadorMixin(PermisoRequeridoMixin):
-    tipo_usuario_requerido = 'ARRENDADOR'
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.tipo_usuario == 'ARRENDADOR'
 
 class EsArrendatarioMixin(PermisoRequeridoMixin):
-    tipo_usuario_requerido = 'ARRENDATARIO'
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.tipo_usuario == 'ARRENDATARIO'
 
-# Mixins por grupo
+# Mixins por grupo (alternativa)
 class GrupoAdministradoresMixin(PermisoRequeridoMixin):
-    grupo_requerido = 'Administradores'
+    grupos_requeridos = ['Administradores']
 
 class GrupoArrendadoresMixin(PermisoRequeridoMixin):
-    grupo_requerido = 'Arrendadores'
+    grupos_requeridos = ['Arrendadores']
 
 class GrupoArrendatariosMixin(PermisoRequeridoMixin):
-    grupo_requerido = 'Arrendatarios'
+    grupos_requeridos = ['Arrendatarios']

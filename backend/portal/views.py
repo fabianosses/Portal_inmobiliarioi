@@ -12,11 +12,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.http import require_GET
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from .forms import LoginForm, RegisterForm
-from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
+import logging
+from .forms import LoginForm, RegisterForm
 from .services import ChileanLocationService
 from .mixins import (
     PermisoRequeridoMixin, PuedeGestionarInmueblesMixin, PuedeVerTodosInmueblesMixin,
@@ -48,14 +50,34 @@ from django.views.generic import (
     DeleteView
 )
 
+logger = logging.getLogger(__name__)
+
+@require_GET
+@csrf_exempt  # Solo si necesitas para desarrollo, quitar en producción
 def cargar_comunas(request):
-    """Vista para cargar comunas basado en la región seleccionada"""
-    region_code = request.GET.get('region')
-    if region_code:
+    """Vista para cargar comunas basadas en la región seleccionada"""
+    region_code = request.GET.get('region', '').strip()
+    
+    if not region_code:
+        return JsonResponse({'error': 'Código de región no proporcionado'}, status=400)
+    
+    try:
         comunas = ChileanLocationService.get_comunas_by_region(region_code)
-        data = [{'codigo': c['codigo'], 'nombre': c['nombre']} for c in comunas]
-        return JsonResponse(data, safe=False)
-    return JsonResponse([], safe=False)
+        
+        if not comunas:
+            return JsonResponse({
+                'error': f'No se encontraron comunas para la región {region_code}',
+                'comunas': []
+            }, status=404)
+        
+        return JsonResponse(comunas, safe=False)
+        
+    except Exception as e:
+        logger.error(f"Error en cargar_comunas: {e}")
+        return JsonResponse({
+            'error': 'Error interno del servidor al cargar comunas',
+            'comunas': []
+        }, status=500)
 
 ##########################################################
 # CRUD GRUPOS Y USUARIOS
@@ -228,13 +250,21 @@ class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     model = Inmueble
     template_name = 'inmuebles/inmueble_form.html'
     form_class = InmuebleForm
-    success_url = reverse_lazy('inmueble_list')
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Inmueble creado exitosamente.')
+        return reverse_lazy('inmuebles/inmueble_list')
     
     def form_valid(self, form):
         form.instance.propietario = self.request.user
-        # Puedes añadir lógica para "publicar" el inmueble si el usuario tiene el permiso
+        
+        # Solo administradores pueden publicar inmediatamente
         if self.request.user.has_perm('portal.publicar_inmueble'):
             form.instance.esta_publicado = True
+        else:
+            form.instance.esta_publicado = False
+            messages.info(self.request, 'Tu inmueble será revisado antes de ser publicado.')
+        
         return super().form_valid(form)
 
 class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):

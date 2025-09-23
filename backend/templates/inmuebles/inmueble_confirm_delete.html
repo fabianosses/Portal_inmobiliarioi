@@ -1,3 +1,9 @@
+<!-- backend/templates/inmuebles/inmueble_confirm_delete.html -->
+ 
+{% extends 'web/base.html' %}
+
+{% block content %}
+
 <form method="post">
     {% csrf_token %}
     <p>¿Estás seguro de que deseas eliminar el inmueble? "{{ object.nombre }}"?</p>

@@ -1,3 +1,8 @@
+<!-- backend/templates/inmuebles/comuna_confirm_delete.html -->
+ 
+{% extends 'web/base.html' %}
+
+{% block content %}
 <form method="post">
     {% csrf_token %}
     <p>¿Estás seguro de que deseas eliminar la comuna "{{ object.nombre }}"?</p>

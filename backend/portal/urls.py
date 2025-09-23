@@ -47,6 +47,7 @@ urlpatterns = [
     path('listar_comunas/', ComunaListView.as_view(), name='comuna_list'),
     path('crear_comuna/', ComunaCreateView.as_view(), name='comuna_create'),
     path('actualizar_comuna/<int:pk>/', ComunaUpdateView.as_view(), name='comuna_update'),
+    path('cargar-comunas/', cargar_comunas, name='cargar_comunas'),
     path('borrar_comuna/<int:pk>/', ComunaDeleteView.as_view(), name='borrar_comuna'),
 ##########################################################
 
@@ -59,7 +60,7 @@ urlpatterns = [
 
     # solicitud arriendo
     path('listar_solicitudes/', SolicitudArriendoListView.as_view(), name='solicitud_list'),
-    path('crear_solicitud/', SolicitudArriendoCreateView.as_view(), name='solicitud_create'),
+    path('crear_solicitud/<int:inmueble_pk>/', SolicitudArriendoCreateView.as_view(), name='solicitud_create'),
     path('actualizar_solicitud/<int:pk>/', SolicitudArriendoUpdateView.as_view(), name='solicitud_update'),
     path('borrar_solicitud/<int:pk>/', SolicitudArriendoDeleteView.as_view(), name='solicitud_delete'),
 ##########################################################

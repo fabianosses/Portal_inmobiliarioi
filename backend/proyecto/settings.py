@@ -87,7 +87,7 @@ DATABASES = {
         "NAME": os.environ.get('POSTGRES_DB'),
         "USER": os.environ.get('POSTGRES_USER'),
         "PASSWORD": os.environ.get('POSTGRES_PASSWORD'),
-        "HOST": os.environ.get('POSTGRES_HOST'),
+        "HOST": os.environ.get('POSTGRES_HOST', 'db'),
         "PORT": '5432',
     }
 }
@@ -139,6 +139,16 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / "backend/portal/static",
+]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

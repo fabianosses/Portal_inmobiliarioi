@@ -1,9 +1,9 @@
 # backend/portal/forms.py
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import *
-import requests
+from .models import Inmueble, SolicitudArriendo, PerfilUsuario, Region, Comuna
+from .services import ChileanLocationService
+import requests, logging
 
 class RegionForm(forms.ModelForm):
     class Meta:
@@ -15,9 +15,9 @@ class ComunaForm(forms.ModelForm):
         model = Comuna
         fields = ['region', 'nombre']
 
-class InmuebleForm(forms.ModelForm):
+logger = logging.getLogger(__name__)
 
-    # Campos para la selección de ubicación usando la API
+class InmuebleForm(forms.ModelForm):
     region_codigo = forms.ChoiceField(
         label='Región',
         required=True,
@@ -35,81 +35,73 @@ class InmuebleForm(forms.ModelForm):
         choices=[],
         widget=forms.Select(attrs={
             'class': 'form-control',
-            'id': 'id_comuna'
+            'id': 'id_comuna',
+            'disabled': 'disabled'
         })
     )
 
     class Meta:
         model = Inmueble
         fields = [
-            'propietario', 'nombre', 'descripcion', 'm2_construidos', 
+            'nombre', 'imagen', 'descripcion', 'm2_construidos', 
             'm2_totales', 'estacionamientos', 'habitaciones', 'banos', 
             'direccion', 'precio_mensual', 'tipo_inmueble',
             'region_codigo', 'comuna_codigo'
         ]
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+            'precio_mensual': forms.NumberInput(attrs={'class': 'form-control'}),
+            'm2_construidos': forms.NumberInput(attrs={'class': 'form-control'}),
+            'm2_totales': forms.NumberInput(attrs={'class': 'form-control'}),
+            'habitaciones': forms.NumberInput(attrs={'class': 'form-control'}),
+            'banos': forms.NumberInput(attrs={'class': 'form-control'}),
+            'estacionamientos': forms.NumberInput(attrs={'class': 'form-control'}),
+            'tipo_inmueble': forms.Select(attrs={'class': 'form-control'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Cargar opciones de regiones
-        self.fields['region_codigo'].choices = self.get_regiones_choices()
-        self.fields['comuna_codigo'].choices = [('', 'Primero selecciona una región')]
+        # Cargar regiones
+        self.cargar_regiones()
         
-        # Si ya existe la instancia, cargar los valores
-        if self.instance and self.instance.region_codigo:
-            self.fields['region_codigo'].initial = self.instance.region_codigo
-            # Cargar comunas para la región seleccionada
-            self.fields['comuna_codigo'].choices = self.get_comunas_choices(self.instance.region_codigo)
-            if self.instance.comuna_codigo:
-                self.fields['comuna_codigo'].initial = self.instance.comuna_codigo
+        # Cargar comunas si estamos editando
+        if self.instance and self.instance.pk and self.instance.region_codigo:
+            self.cargar_comunas_para_edicion()
 
-    def get_regiones_choices(self):
-        """Obtener choices de regiones desde la API"""
+    def cargar_regiones(self):
+        """Carga las regiones en el campo correspondiente"""
         try:
-            response = requests.get('https://apis.digital.gob.cl/dpa/regiones', timeout=5)
-            regiones = response.json()
-            choices = [(r['codigo'], r['nombre']) for r in regiones]
-            return [('', 'Selecciona una región')] + choices
-        except:
-            return [('', 'Error cargando regiones')]
-    
-    def get_comunas_choices(self, region_code):
-        """Obtener choices de comunas para una región"""
+            regiones = ChileanLocationService.get_regiones()
+            if regiones:
+                choices = [(r['codigo'], r['nombre']) for r in regiones]
+                self.fields['region_codigo'].choices = [('', 'Selecciona una región')] + choices
+            else:
+                self.fields['region_codigo'].choices = [('', 'No se pudieron cargar las regiones')]
+                logger.error("No se pudieron obtener las regiones")
+        except Exception as e:
+            self.fields['region_codigo'].choices = [('', 'Error cargando regiones')]
+            logger.error(f"Error cargando regiones: {e}")
+
+    def cargar_comunas_para_edicion(self):
+        """Carga las comunas cuando se está editando un inmueble"""
         try:
-            response = requests.get(f'https://apis.digital.gob.cl/dpa/regiones/{region_code}/comunas', timeout=5)
-            comunas = response.json()
-            choices = [(c['codigo'], c['nombre']) for c in comunas]
-            return [('', 'Selecciona una comuna')] + choices
-        except:
-            return [('', 'Error cargando comunas')]
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Guardar los nombres de región y comuna
-        region_codigo = self.cleaned_data.get('region_codigo')
-        comuna_codigo = self.cleaned_data.get('comuna_codigo')
-        
-        if region_codigo:
-            try:
-                response = requests.get(f'https://apis.digital.gob.cl/dpa/regiones/{region_codigo}', timeout=5)
-                if response.status_code == 200:
-                    instance.region_nombre = response.json().get('nombre', '')
-            except:
-                instance.region_nombre = ''
-        
-        if comuna_codigo:
-            try:
-                response = requests.get(f'https://apis.digital.gob.cl/dpa/comunas/{comuna_codigo}', timeout=5)
-                if response.status_code == 200:
-                    instance.comuna_nombre = response.json().get('nombre', '')
-            except:
-                instance.comuna_nombre = ''
-        
-        if commit:
-            instance.save()
-        
-        return instance
+            comunas = ChileanLocationService.get_comunas_by_region(self.instance.region_codigo)
+            if comunas:
+                comuna_choices = [(c['codigo'], c['nombre']) for c in comunas]
+                self.fields['comuna_codigo'].choices = [('', 'Selecciona una comuna')] + comuna_choices
+                
+                # Si hay una comuna seleccionada, habilitar el campo
+                if self.instance.comuna_codigo:
+                    self.fields['comuna_codigo'].widget.attrs.pop('disabled', None)
+            else:
+                self.fields['comuna_codigo'].choices = [('', 'No hay comunas para esta región')]
+        except Exception as e:
+            self.fields['comuna_codigo'].choices = [('', 'Error cargando comunas')]
+            logger.error(f"Error cargando comunas para edición: {e}")
 
 class SolicitudArriendoForm(forms.ModelForm):
     class Meta:

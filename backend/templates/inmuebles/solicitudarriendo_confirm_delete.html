@@ -1,3 +1,9 @@
+<!-- backend/templates/inmuebles/solicitudarriendo_confirm_delete.html -->
+
+{% extends 'web/base.html' %}
+
+{% block content %}
+
 <form action="">
     {% csrf_token %}
     <p>¿Estás seguro de que deseas eliminar la solicitud de arriendo "{{ object }} {{ object.estado }}"?</p>

@@ -1,12 +1,13 @@
 # backend/portal/models.py
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import AbstractUser, User, Group, Permission
 from django.conf import settings
-import uuid
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
-from django.db import transaction
+from django.db import transaction 
+from django.contrib.contenttypes.models import ContentType
+import uuid
 
 # Create your models here.
 
@@ -54,18 +55,25 @@ class Inmueble(models.Model):
     precio_mensual = models.DecimalField(max_digits=8, decimal_places=2)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
-    region_codigo = models.CharField(max_length=10, blank=True, null=True)
+    region_codigo = models.CharField(max_length=10, verbose_name='Código de Región')
     region_nombre = models.CharField(max_length=100, blank=True, null=True)
-    comuna_codigo = models.CharField(max_length=10, blank=True, null=True)
+    comuna_codigo = models.CharField(max_length=10, verbose_name='Código de Comuna')
     comuna_nombre = models.CharField(max_length=100, blank=True, null=True)
     tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
     esta_publicado = models.BooleanField(default=False)
-    
+
     class Meta:
         permissions = [
-            ("gestionar_inmueble", "Puede gestionar inmuebles"),
+            # Para Arrendadores - pueden gestionar sus propios inmuebles
+            ("agregar_inmueble", "Puede agregar inmuebles"),
+            ("editar_propio_inmueble", "Puede editar sus propios inmuebles"),
+            ("eliminar_propio_inmueble", "Puede eliminar sus propios inmuebles"),
+            
+            # Para Administradores - permisos globales
             ("ver_todos_inmuebles", "Puede ver todos los inmuebles"),
-            ("publicar_inmueble", "Puede publicar inmuebles"),
+            ("editar_todos_inmuebles", "Puede editar todos los inmuebles"),
+            ("eliminar_todos_inmuebles", "Puede eliminar todos los inmuebles"),
+            ("publicar_inmueble", "Puede publicar/despublicar inmuebles"),
         ]
     
     def __str__(self):
@@ -123,33 +131,35 @@ class PerfilUsuario(AbstractUser):
 def crear_grupos_y_permisos(sender, **kwargs):
     if sender.name != 'portal':
         return
-
-
-############################################################################
-# Crear un grupo de Administradores
-administradores_group, created = Group.objects.get_or_create(name='Administradores')
-# Asignar permisos al grupo
-permissions = Permission.objects.filter(codename__in=[
-    'add_region', 'change_region', 'delete_region',
-    'add_comuna', 'change_comuna', 'delete_comuna',
-    'add_inmueble', 'change_inmueble', 'delete_inmueble',
-    'add_solicitudarriendo', 'change_solicitudarriendo', 'delete_solicitudarriendo',
-    'add_perfilusuario', 'change_perfilusuario', 'delete_perfilusuario',
-])
-administradores_group.permissions.set(permissions)
-
-############################################################################    
-# Crear un grupo de Arrendadores
-arrendadores_group, created = Group.objects.get_or_create(name='Arrendadores')
-
-# Asignar permisos al grupo
-permission = Permission.objects.get(name='pueden agregar inmueble')
-arrendadores_group.permissions.add(permission)
-
-############################################################################
-# Crear un grupo de Arrendatarios
-arrendatarios_group, created = Group.objects.get_or_create(name='Arrendatarios')
-
-# Asignar permisos al grupo
-permission = Permission.objects.get(name='no pueden agregar inmueble')
-arrendatarios_group.permissions.add(permission)
+    
+    # Solo crear si no existen
+    grupos_data = {
+        'Administradores': [
+            'ver_todos_inmuebles', 'editar_todos_inmuebles', 'eliminar_todos_inmuebles',
+            'publicar_inmueble', 'gestionar_usuario', 'gestionar_region', 'gestionar_comuna',
+            'gestionar_solicitud', 'aprobar_solicitud'
+        ],
+        'Arrendadores': [
+            'agregar_inmueble', 'editar_propio_inmueble', 'eliminar_propio_inmueble'
+        ],
+        'Arrendatarios': [
+            # Permisos básicos de visualización
+        ]
+    }
+    
+    for nombre_grupo, permisos_codenames in grupos_data.items():
+        grupo, created = Group.objects.get_or_create(name=nombre_grupo)
+        if created or kwargs.get('verbosity', 0) > 1:
+            print(f"Grupo '{nombre_grupo}' {'creado' if created else 'ya existe'}")
+            
+        # Asignar permisos
+        for codename in permisos_codenames:
+            try:
+                permiso = Permission.objects.get(
+                    codename=codename, 
+                    content_type__app_label='portal'
+                )
+                grupo.permissions.add(permiso)
+            except Permission.DoesNotExist:
+                if kwargs.get('verbosity', 0) > 1:
+                    print(f"Permiso '{codename}' no encontrado para {nombre_grupo}")
