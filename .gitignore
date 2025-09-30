@@ -1,5 +1,5 @@
 # Archivos de entorno
-.env
+backend/.env
 .env.local
 .env.development
 .env.production

@@ -1,5 +1,4 @@
 # backend/portal/services.py
-# backend/portal/services.py
 import requests
 import logging
 from django.core.cache import cache

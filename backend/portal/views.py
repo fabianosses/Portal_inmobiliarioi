@@ -1,5 +1,4 @@
 # backend/portal/views.py
-
 from django.db import transaction
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
@@ -14,6 +13,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_GET
+from django.views.generic import (ListView, CreateView, UpdateView, DeleteView, DetailView)
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.http import JsonResponse
@@ -43,28 +43,26 @@ from .forms import (
     PerfilUsuarioForm
 )
 
-from django.views.generic import (
-    ListView,
-    CreateView,
-    UpdateView,
-    DeleteView
-)
-
 logger = logging.getLogger(__name__)
 
 @require_GET
-@csrf_exempt  # Solo si necesitas para desarrollo, quitar en producción
+@csrf_exempt
 def cargar_comunas(request):
     """Vista para cargar comunas basadas en la región seleccionada"""
     region_code = request.GET.get('region', '').strip()
     
+    logger.info(f"Solicitando comunas para región: {region_code}")
+    
     if not region_code:
+        logger.warning("Código de región no proporcionado")
         return JsonResponse({'error': 'Código de región no proporcionado'}, status=400)
     
     try:
         comunas = ChileanLocationService.get_comunas_by_region(region_code)
+        logger.info(f"Comunas encontradas: {len(comunas)} para región {region_code}")
         
         if not comunas:
+            logger.warning(f"No se encontraron comunas para la región {region_code}")
             return JsonResponse({
                 'error': f'No se encontraron comunas para la región {region_code}',
                 'comunas': []
@@ -221,8 +219,8 @@ class InmueblesListView(PermisoRequeridoMixin, ListView):
         return True # Permitir a todos ver el home. La lógica de queryset filtra lo que ven.
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
+        # Solo mostrar inmuebles publicados
+        return Inmueble.objects.filter(esta_publicado=True).order_by('-creado')
         
         # Si la vista es la del HOME, queremos que todos vean los publicados
         if self.request.resolver_match.url_name == 'home':
@@ -447,39 +445,37 @@ class PerfilUserUpdateView(LoginRequiredMixin, UpdateView): # Añadir LoginRequi
 
 
 @method_decorator(login_required, name='dispatch')
-class PerfilView(UpdateView): # Aquí debería ser DetailView o una View combinada, no UpdateView si no editas
-    model = PerfilUsuario # Definir el modelo para la DetailView
+class PerfilView(DetailView):
+    model = PerfilUsuario
     template_name = 'usuarios/perfil.html'
-    context_object_name = 'perfil' # Nombre del objeto en el contexto
+    context_object_name = 'perfil'
 
     def get_object(self, queryset=None):
-        # Asegurarse de que solo se vea el perfil del usuario logueado
         return self.request.user
 
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        u = self.request.user
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
 
         # Solicitadas por mí (si soy arrendatario)
-        enviadas = (
-            u.solicitudes_enviadas
-            .select_related('inmueble')
-            .order_by('-creado')
-        )
+        enviadas = SolicitudArriendo.objects.filter(
+            arrendatario=user
+        ).select_related('inmueble').order_by('-creado')
 
         # Recibidas en mis inmuebles (si soy arrendador)
-        recibidas = (
-            SolicitudArriendo.objects
-            .filter(inmueble__propietario=u)
-            .select_related('inmueble', 'arrendatario')
-            .order_by('-creado')
-        )
+        recibidas = SolicitudArriendo.objects.filter(
+            inmueble__propietario=user
+        ).select_related('inmueble', 'arrendatario').order_by('-creado')
 
-        ctx.update({
+        # Mis inmuebles (si soy arrendador)
+        mis_inmuebles = Inmueble.objects.filter(propietario=user)
+
+        context.update({
             'enviadas': enviadas,
             'recibidas': recibidas,
+            'mis_inmuebles': mis_inmuebles,
         })
-        return ctx
+        return context
 
 
 #login/logout/register
@@ -556,5 +552,11 @@ class CustomLogoutView(LogoutView):
 #########################################################
 # Esta vista mostrará las propiedades destacadas para todos los usuarios.
 def home_view(request):
-    inmuebles = Inmueble.objects.filter(esta_publicado=True)
-    return render(request, 'web/home.html', {'inmuebles': inmuebles})
+    """Vista para la página de inicio que muestra propiedades publicadas"""
+    try:
+        inmuebles = Inmueble.objects.filter(esta_publicado=True)
+        return render(request, 'web/home.html', {'inmuebles': inmuebles})
+    except Exception as e:
+        logger.error(f"Error en home_view: {e}")
+        # En caso de error, mostrar lista vacía
+        return render(request, 'web/home.html', {'inmuebles': []})

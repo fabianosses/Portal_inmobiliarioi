@@ -1,0 +1,301 @@
+<!-- templates/usuarios/perfil.html -->
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Inmobiliaria Conecta{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar de perfil -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-custom border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <div class="position-relative">
+                        <img src="{{ perfil.imagen.url }}" 
+                             alt="Foto de perfil" 
+                             class="rounded-circle mb-3"
+                             style="width: 120px; height: 120px; object-fit: cover;">
+                        <a href="{% url 'perfil_update' %}" class="btn btn-sm btn-light position-absolute bottom-0 end-0 rounded-circle">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                    <h5 class="mb-0">{{ perfil.get_full_name|default:perfil.username }}</h5>
+                    <span class="badge bg-light text-dark mt-2">{{ perfil.get_tipo_usuario_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-person me-2"></i>Usuario</span>
+                            <strong>{{ perfil.username }}</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-envelope me-2"></i>Email</span>
+                            <strong>{{ perfil.email|default:"No especificado" }}</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-card-text me-2"></i>RUT</span>
+                            <strong>{{ perfil.rut|default:"No especificado" }}</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-calendar me-2"></i>Miembro desde</span>
+                            <strong>{{ perfil.date_joined|date:"d/m/Y" }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{% url 'perfil_update' %}" class="btn btn-primary w-100">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="col-md-8">
+            <!-- Estadísticas rápidas -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center bg-light border-0">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ mis_inmuebles.count }}</h3>
+                            <p class="mb-0">Mis Propiedades</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center bg-light border-0">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ enviadas.count }}</h3>
+                            <p class="mb-0">Solicitudes Enviadas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center bg-light border-0">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ recibidas.count }}</h3>
+                            <p class="mb-0">Solicitudes Recibidas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mis Propiedades (para arrendadores) -->
+            {% if mis_inmuebles %}
+            <div class="card shadow-custom border-0 mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-house me-2"></i>Mis Propiedades</h5>
+                    <a href="{% url 'inmueble_create' %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Agregar
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inmueble in mis_inmuebles|slice:":5" %}
+                                <tr>
+                                    <td>{{ inmueble.nombre }}</td>
+                                    <td><span class="badge bg-secondary">{{ inmueble.get_tipo_inmueble_display }}</span></td>
+                                    <td>${{ inmueble.precio_mensual }}</td>
+                                    <td>
+                                        {% if inmueble.esta_publicado %}
+                                            <span class="badge bg-success">Publicado</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'actualizar_inmueble' inmueble.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if mis_inmuebles.count > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'inmueble_list' %}" class="btn btn-outline-success btn-sm">
+                            Ver todas las propiedades
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Solicitudes Enviadas (para arrendatarios) -->
+            {% if enviadas %}
+            <div class="card shadow-custom border-0 mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-send me-2"></i>Mis Solicitudes de Arriendo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Propiedad</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitud in enviadas|slice:":5" %}
+                                <tr>
+                                    <td>{{ solicitud.inmueble.nombre }}</td>
+                                    <td>{{ solicitud.creado|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if solicitud.estado == 'P' %}
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        {% elif solicitud.estado == 'A' %}
+                                            <span class="badge bg-success">Aceptada</span>
+                                        {% elif solicitud.estado == 'R' %}
+                                            <span class="badge bg-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'solicitud_update' solicitud.id %}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if enviadas.count > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'solicitud_list' %}" class="btn btn-outline-info btn-sm">
+                            Ver todas las solicitudes
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Solicitudes Recibidas (para arrendadores) -->
+            {% if recibidas %}
+            <div class="card shadow-custom border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-inbox me-2"></i>Solicitudes Recibidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Propiedad</th>
+                                    <th>Solicitante</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitud in recibidas|slice:":5" %}
+                                <tr>
+                                    <td>{{ solicitud.inmueble.nombre }}</td>
+                                    <td>{{ solicitud.arrendatario.get_full_name|default:solicitud.arrendatario.username }}</td>
+                                    <td>{{ solicitud.creado|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if solicitud.estado == 'P' %}
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        {% elif solicitud.estado == 'A' %}
+                                            <span class="badge bg-success">Aceptada</span>
+                                        {% elif solicitud.estado == 'R' %}
+                                            <span class="badge bg-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'solicitud_update' solicitud.id %}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if recibidas.count > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'solicitud_list' %}" class="btn btn-outline-warning btn-sm">
+                            Ver todas las solicitudes
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Mensaje para nuevos usuarios -->
+            {% if not mis_inmuebles and not enviadas and not recibidas %}
+            <div class="card shadow-custom border-0 text-center">
+                <div class="card-body py-5">
+                    <i class="bi bi-person-circle display-1 text-muted mb-3"></i>
+                    <h4>¡Bienvenido a tu perfil!</h4>
+                    <p class="text-muted mb-4">Aquí podrás gestionar tus propiedades y solicitudes de arriendo.</p>
+                    
+                    {% if perfil.tipo_usuario == 'ARRENDADOR' %}
+                    <a href="{% url 'inmueble_create' %}" class="btn btn-primary me-2">
+                        <i class="bi bi-plus-circle me-1"></i>Agregar Mi Primera Propiedad
+                    </a>
+                    {% endif %}
+                    
+                    {% if perfil.tipo_usuario == 'ARRENDATARIO' %}
+                    <a href="{% url 'inmueble_list' %}" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Explorar Propiedades
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'perfil_update' %}" class="btn btn-outline-primary ms-2">
+                        <i class="bi bi-pencil-square me-1"></i>Completar Mi Perfil
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    border-radius: 10px;
+}
+
+.shadow-custom {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 0;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+</style>
+{% endblock %}

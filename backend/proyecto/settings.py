@@ -67,6 +67,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -140,7 +141,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    BASE_DIR / 'backend/portal/static/portal',
+    BASE_DIR / "portal" / "static",
 ]
 
 CACHES = {

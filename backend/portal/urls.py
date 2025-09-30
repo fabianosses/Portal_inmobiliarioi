@@ -66,7 +66,7 @@ urlpatterns = [
 ##########################################################
 
     # perfil usuario
-    path('actualizar_perfil/<int:pk>', PerfilUserUpdateView.as_view(), name='perfil_update'),
+    path('actualizar_perfil/', PerfilUserUpdateView.as_view(), name='perfil_update'),
     path('perfil/', PerfilView.as_view(), name='perfil'),
 
 #########################################################################
