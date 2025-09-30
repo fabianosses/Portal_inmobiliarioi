@@ -1,4 +1,5 @@
 # backend/portal/services.py
+# backend/portal/services.py
 import requests
 import logging
 from django.core.cache import cache
@@ -10,10 +11,11 @@ class ChileanLocationService:
     Servicio para obtener datos geográficos de Chile con múltiples fuentes
     """
     
-    # API oficial del gobierno de Chile
+    # APIs alternativas
     DPA_API_URL = "https://apis.digital.gob.cl/dpa"
+    GORE_API_URL = "https://gobiernoabierto.interior.gob.cl/api"
     
-    # Datos estáticos completos como fallback
+    # Datos estáticos completos
     REGIONES_STATIC = [
         {'codigo': '15', 'nombre': 'Arica y Parinacota'},
         {'codigo': '1', 'nombre': 'Tarapacá'},
@@ -68,6 +70,8 @@ class ChileanLocationService:
             {'codigo': '5103', 'nombre': 'Concón'}, {'codigo': '5104', 'nombre': 'Quilpué'},
             {'codigo': '5105', 'nombre': 'Villa Alemana'}, {'codigo': '5106', 'nombre': 'Juan Fernández'},
             {'codigo': '5107', 'nombre': 'Casablanca'}, {'codigo': '5108', 'nombre': 'Puchuncaví'},
+            {'codigo': '5109', 'nombre': 'Quintero'}, {'codigo': '5110', 'nombre': 'Valparaíso'},
+            {'codigo': '5111', 'nombre': 'Viña del Mar'}, {'codigo': '5112', 'nombre': 'Isla de Pascua'},
         ],
         '8': [  # Biobío
             {'codigo': '8101', 'nombre': 'Concepción'}, {'codigo': '8102', 'nombre': 'Coronel'},
@@ -100,37 +104,14 @@ class ChileanLocationService:
         if cached_regiones:
             return cached_regiones
             
-        try:
-            # Intentar con API oficial
-            response = requests.get(f"{ChileanLocationService.DPA_API_URL}/regiones", timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            
-            if isinstance(data, list) and len(data) > 0:
-                regiones_formateadas = []
-                for region in data:
-                    regiones_formateadas.append({
-                        'codigo': str(region.get('codigo', '')),
-                        'nombre': region.get('nombre', '')
-                    })
-                
-                # Guardar en cache por 24 horas
-                cache.set('chile_regiones', regiones_formateadas, 86400)
-                logger.info("Regiones obtenidas desde API oficial")
-                return regiones_formateadas
-                
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"API oficial no disponible: {e}. Usando datos estáticos.")
-        except Exception as e:
-            logger.error(f"Error inesperado con API oficial: {e}. Usando datos estáticos.")
-        
-        # Usar datos estáticos como fallback
+        # Usar datos estáticos directamente para evitar problemas de API
+        logger.info("Usando datos estáticos de regiones")
         cache.set('chile_regiones', ChileanLocationService.REGIONES_STATIC, 86400)
         return ChileanLocationService.REGIONES_STATIC
 
     @staticmethod
     def get_comunas_by_region(region_codigo):
-        """Obtiene comunas desde API oficial con fallback a datos estáticos."""
+        """Obtiene comunas desde datos estáticos."""
         if not region_codigo:
             return []
             
@@ -139,31 +120,24 @@ class ChileanLocationService:
         if cached_comunas:
             return cached_comunas
             
-        try:
-            # Intentar con API oficial
-            response = requests.get(f"{ChileanLocationService.DPA_API_URL}/regiones/{region_codigo}/comunas", timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            
-            if isinstance(data, list) and len(data) > 0:
-                comunas_formateadas = []
-                for comuna in data:
-                    comunas_formateadas.append({
-                        'codigo': str(comuna.get('codigo', '')),
-                        'nombre': comuna.get('nombre', '')
-                    })
-                
-                # Guardar en cache por 24 horas
-                cache.set(cache_key, comunas_formateadas, 86400)
-                logger.info(f"Comunas para región {region_codigo} obtenidas desde API oficial")
-                return comunas_formateadas
-                
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"API oficial no disponible para comunas: {e}. Usando datos estáticos.")
-        except Exception as e:
-            logger.error(f"Error inesperado con API oficial para comunas: {e}. Usando datos estáticos.")
+        logger.info(f"Buscando comunas estáticas para región: {region_codigo}")
         
-        # Usar datos estáticos como fallback
+        # Usar datos estáticos directamente
         comunas_estaticas = ChileanLocationService.COMUNAS_STATIC.get(region_codigo, [])
+        
+        if not comunas_estaticas:
+            logger.warning(f"No se encontraron comunas estáticas para la región {region_codigo}")
+            # Crear una comuna genérica como fallback
+            comunas_estaticas = [{'codigo': f'{region_codigo}001', 'nombre': 'Comuna Principal'}]
+        
+        logger.info(f"Encontradas {len(comunas_estaticas)} comunas para región {region_codigo}")
         cache.set(cache_key, comunas_estaticas, 86400)
         return comunas_estaticas
+
+    @staticmethod
+    def get_all_comunas():
+        """Obtiene todas las comunas de todas las regiones (para debugging)."""
+        all_comunas = []
+        for region_codigo, comunas in ChileanLocationService.COMUNAS_STATIC.items():
+            all_comunas.extend(comunas)
+        return all_comunas

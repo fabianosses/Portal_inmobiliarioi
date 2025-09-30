@@ -147,124 +147,143 @@
 {% block extra_js %}
 <script>
 function cargarComunas() {
-    const regionSelect = document.getElementById('id_region_codigo');
-    const comunaSelect = document.getElementById('id_comuna_codigo');
-    const comunaLoading = document.getElementById('comuna-loading');
+    console.log('=== INICIANDO CARGA DE COMUNAS ===');
+    
+    // Encontrar elementos por nombre o ID
+    let regionSelect = document.getElementById('id_region_codigo');
+    let comunaSelect = document.getElementById('id_comuna_codigo');
+    
+    // Si no los encuentra por ID, buscar por nombre
+    if (!regionSelect) {
+        regionSelect = document.querySelector('select[name="region_codigo"]');
+    }
+    if (!comunaSelect) {
+        comunaSelect = document.querySelector('select[name="comuna_codigo"]');
+    }
+    
     const regionCode = regionSelect ? regionSelect.value : '';
     
-    if (!comunaSelect) return;
+    if (!comunaSelect) {
+        console.error('ERROR: No se pudo encontrar el elemento comunaSelect');
+        return;
+    }
     
-    // Resetear y deshabilitar comuna
+    if (!regionSelect) {
+        console.error('ERROR: No se pudo encontrar el elemento regionSelect');
+        return;
+    }
+    
+    // Resetear comuna
     comunaSelect.disabled = true;
-    comunaSelect.innerHTML = '<option value="">Selecciona una región primero</option>';
+    comunaSelect.innerHTML = '<option value="">Cargando...</option>';
     
-    if (regionCode) {
-        // Mostrar loading
-        comunaLoading.style.display = 'block';
-        comunaSelect.innerHTML = '<option value="">Cargando comunas...</option>';
-        
-        // Usar la URL correcta - verifica que coincida con tu urls.py
-        fetch(`/cargar-comunas/?region=${encodeURIComponent(regionCode)}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                comunaLoading.style.display = 'none';
+    if (!regionCode) {
+        comunaSelect.innerHTML = '<option value="">Selecciona una región primero</option>';
+        return;
+    }
+    
+    // URL de la API
+    const url = `/cargar-comunas/?region=${encodeURIComponent(regionCode)}`;
+    
+    // Realizar petición
+    fetch(url)
+        .then(response => {
+            return response.json().then(data => {
+                return { ok: response.ok, status: response.status, data: data };
+            });
+        })
+        .then(({ ok, status, data }) => {
+            if (!ok) {
+                throw new Error(`Error ${status}: ${data.error || 'Error del servidor'}`);
+            }
+            
+            if (Array.isArray(data)) {
+                comunaSelect.innerHTML = '';
                 
-                // Verificar si la respuesta es un array de comunas
-                if (Array.isArray(data)) {
-                    comunaSelect.innerHTML = '';
-                    
-                    // Opción por defecto
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = 'Selecciona una comuna';
-                    comunaSelect.appendChild(defaultOption);
-                    
-                    // Agregar comunas
-                    data.forEach(comuna => {
-                        const option = document.createElement('option');
-                        option.value = comuna.codigo;
-                        option.textContent = comuna.nombre;
-                        comunaSelect.appendChild(option);
-                    });
-                    
-                    comunaSelect.disabled = false;
-                    
-                    // Seleccionar comuna existente si estamos editando
-                    {% if form.instance.comuna_codigo.value %}
-                        const comunaValue = "{{ form.instance.comuna_codigo|escapejs }}";
-                        if (comunaValue) {
-                            setTimeout(() => {
-                                comunaSelect.value = comunaValue;
-                            }, 100);
-                        }
-                    {% endif %}
-                    
-                } else if (data.error) {
-                    // Manejar respuesta de error
-                    throw new Error(data.error);
-                } else {
-                    throw new Error('Formato de respuesta inválido');
-                }
-            })
-            .catch(error => {
-                console.error('Error cargando comunas:', error);
-                comunaLoading.style.display = 'none';
-                comunaSelect.innerHTML = '<option value="">Error cargando comunas</option>';
+                // Opción por defecto
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Selecciona una comuna';
+                comunaSelect.appendChild(defaultOption);
+                
+                // Agregar comunas
+                data.forEach(comuna => {
+                    const option = document.createElement('option');
+                    option.value = comuna.codigo;
+                    option.textContent = comuna.nombre;
+                    comunaSelect.appendChild(option);
+                });
+                
                 comunaSelect.disabled = false;
                 
-                // Mostrar alerta al usuario
-                alert('Error al cargar las comunas. Por favor, intenta nuevamente.');
-            });
-    } else {
-        comunaLoading.style.display = 'none';
-        comunaSelect.innerHTML = '<option value="">Selecciona una región primero</option>';
-        comunaSelect.disabled = true;
-    }
+            } else {
+                throw new Error('Formato de respuesta inválido');
+            }
+        })
+        .catch(error => {
+            console.error('Error en la petición:', error);
+            comunaSelect.innerHTML = '<option value="">Error cargando comunas</option>';
+            comunaSelect.disabled = false;
+        });
 }
 
-// Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    const regionSelect = document.getElementById('id_region_codigo');
-    const comunaSelect = document.getElementById('id_comuna_codigo');
+// Función para encontrar los elementos correctos
+function encontrarElementosFormulario() {
+    // Lista de posibles IDs y nombres
+    const posiblesIdsRegion = [
+        'id_region_codigo',
+        'id_region',
+        'region_codigo',
+        'region'
+    ];
     
-    if (regionSelect) {
-        // Cargar comunas si ya hay una región seleccionada (modo edición)
-        if (regionSelect.value) {
-            setTimeout(cargarComunas, 100);
-        }
-        
-        // También cargar al cambiar manualmente
-        regionSelect.addEventListener('change', cargarComunas);
+    const posiblesIdsComuna = [
+        'id_comuna_codigo', 
+        'id_comuna',
+        'comuna_codigo',
+        'comuna'
+    ];
+    
+    let regionSelect = null;
+    let comunaSelect = null;
+    
+    // Buscar por ID
+    for (const id of posiblesIdsRegion) {
+        regionSelect = document.getElementById(id);
+        if (regionSelect) break;
     }
     
-    // Validación antes de enviar el formulario
-    const form = document.getElementById('inmuebleForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const regionValue = regionSelect ? regionSelect.value : '';
-            const comunaValue = comunaSelect ? comunaSelect.value : '';
-            
-            if (!regionValue) {
-                e.preventDefault();
-                alert('Por favor selecciona una región');
-                regionSelect.focus();
-                return;
-            }
-            
-            if (!comunaValue) {
-                e.preventDefault();
-                alert('Por favor selecciona una comuna');
-                if (comunaSelect && !comunaSelect.disabled) {
-                    comunaSelect.focus();
-                }
-                return;
-            }
+    for (const id of posiblesIdsComuna) {
+        comunaSelect = document.getElementById(id);
+        if (comunaSelect) break;
+    }
+    
+    // Si no se encontraron por ID, buscar por name
+    if (!regionSelect) {
+        regionSelect = document.querySelector('select[name="region_codigo"], select[name="region"]');
+    }
+    
+    if (!comunaSelect) {
+        comunaSelect = document.querySelector('select[name="comuna_codigo"], select[name="comuna"]');
+    }
+    
+    return { regionSelect, comunaSelect };
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    const { regionSelect, comunaSelect } = encontrarElementosFormulario();
+    
+    if (regionSelect && comunaSelect) {
+        // Configurar evento change
+        regionSelect.addEventListener('change', function() {
+            cargarComunas();
         });
+        
+        // Cargar comunas si ya hay una región seleccionada
+        if (regionSelect.value) {
+            setTimeout(cargarComunas, 500);
+        }
     }
 });
 </script>
@@ -289,16 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
-.spinner {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Mejorar la apariencia de los selects */
 .form-select:disabled {
     background-color: #e9ecef;
     opacity: 0.6;

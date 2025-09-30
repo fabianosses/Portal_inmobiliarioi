@@ -51,15 +51,22 @@ def cargar_comunas(request):
     """Vista para cargar comunas basadas en la región seleccionada"""
     region_code = request.GET.get('region', '').strip()
     
-    logger.info(f"Solicitando comunas para región: {region_code}")
+    logger.info(f"=== SOLICITUD CARGAR COMUNAS ===")
+    logger.info(f"Parámetro región recibido: '{region_code}'")
+    logger.info(f"Headers: {dict(request.headers)}")
     
     if not region_code:
         logger.warning("Código de región no proporcionado")
-        return JsonResponse({'error': 'Código de región no proporcionado'}, status=400)
+        return JsonResponse({'error': 'Código de región no proporcionado', 'comunas': []}, status=400)
     
     try:
+        logger.info(f"Buscando comunas para región: {region_code}")
         comunas = ChileanLocationService.get_comunas_by_region(region_code)
-        logger.info(f"Comunas encontradas: {len(comunas)} para región {region_code}")
+        logger.info(f"Comunas encontradas: {len(comunas)}")
+        
+        # Log las primeras 3 comunas para debugging
+        for i, comuna in enumerate(comunas[:3]):
+            logger.info(f"Comuna {i+1}: {comuna}")
         
         if not comunas:
             logger.warning(f"No se encontraron comunas para la región {region_code}")
@@ -68,12 +75,13 @@ def cargar_comunas(request):
                 'comunas': []
             }, status=404)
         
+        logger.info("Enviando respuesta con comunas")
         return JsonResponse(comunas, safe=False)
         
     except Exception as e:
-        logger.error(f"Error en cargar_comunas: {e}")
+        logger.error(f"Error crítico en cargar_comunas: {e}", exc_info=True)
         return JsonResponse({
-            'error': 'Error interno del servidor al cargar comunas',
+            'error': f'Error interno del servidor: {str(e)}',
             'comunas': []
         }, status=500)
 
