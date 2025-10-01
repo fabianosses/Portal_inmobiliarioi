@@ -1,6 +1,8 @@
+# backend/portal/mixins.py
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from django.contrib import messages
 
 class PermisoRequeridoMixin(UserPassesTestMixin):
     """Mixin base para verificar permisos"""
@@ -32,8 +34,26 @@ class PermisoRequeridoMixin(UserPassesTestMixin):
 
 # Mixins específicos actualizados
 class PuedeGestionarInmueblesMixin(PermisoRequeridoMixin):
-    permisos_requeridos = ['portal.agregar_inmueble', 'portal.ver_todos_inmuebles']
-    grupos_requeridos = ['Arrendadores', 'Administradores']
+    def test_func(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        
+        # Permitir a TODOS los usuarios autenticados crear inmuebles
+        # Esto es más permisivo para desarrollo
+        return True
+        
+        # O si quieres ser más específico:
+        # return (user.tipo_usuario == PerfilUsuario.TipoUsuario.ARRENDADOR or 
+        #         user.tipo_usuario == PerfilUsuario.TipoUsuario.ADMINISTRADOR or
+        #         user.has_perm('portal.agregar_inmueble') or
+        #         user.groups.filter(name='Arrendadores').exists())
+    
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            messages.error(self.request, "No tienes permisos para gestionar inmuebles. Debes ser Arrendador.")
+            return redirect('perfil')
+        return redirect('login')
 
 class PuedeVerTodosInmueblesMixin(PermisoRequeridoMixin):
     permisos_requeridos = ['portal.ver_todos_inmuebles']

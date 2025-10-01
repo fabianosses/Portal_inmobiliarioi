@@ -1,5 +1,4 @@
 # backend/portal/apps.py
-
 from django.apps import AppConfig
 
 class PortalConfig(AppConfig):

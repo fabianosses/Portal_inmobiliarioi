@@ -7,46 +7,103 @@
 {% block content %}
 <div class="container py-5">
     <div class="row">
-        <!-- Sidebar de perfil -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-custom border-0">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <div class="position-relative">
-                        <img src="{{ perfil.imagen.url }}" 
-                             alt="Foto de perfil" 
-                             class="rounded-circle mb-3"
-                             style="width: 120px; height: 120px; object-fit: cover;">
-                        <a href="{% url 'perfil_update' %}" class="btn btn-sm btn-light position-absolute bottom-0 end-0 rounded-circle">
-                            <i class="bi bi-pencil"></i>
-                        </a>
+        <div class="col-md-4">
+            <!-- Información del usuario -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <img src="{{ perfil.imagen.url }}" alt="Foto de perfil" class="rounded-circle mb-3" width="120" height="120">
+                    <h4>{{ perfil.get_full_name }}</h4>
+                    <p class="text-muted">{{ perfil.tipo_usuario }}</p>
+                    <p class="text-muted">{{ perfil.email }}</p>
+                    <a href="{% url 'perfil_update' %}" class="btn btn-outline-primary btn-sm">Editar Perfil</a>
+                </div>
+            </div>
+            
+            {% if not mis_inmuebles %}
+            <div class="text-center py-4">
+                <i class="bi bi-house display-4 text-muted mb-3"></i>
+                <p class="text-muted">No tienes inmuebles registrados</p>
+                
+                <!-- Verificar permisos antes de mostrar el botón -->
+                {% if perfil.tipo_usuario == 'ARRENDADOR' or perfil.tipo_usuario == 'ADMINISTRADOR' %}
+                    <a href="{% url 'inmueble_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Publicar mi primer inmueble
+                    </a>
+                {% else %}
+                    <div class="alert alert-info">
+                        <small>Para publicar inmuebles necesitas ser Arrendador. <a href="{% url 'perfil_update' %}">Actualiza tu perfil</a>.</small>
                     </div>
-                    <h5 class="mb-0">{{ perfil.get_full_name|default:perfil.username }}</h5>
-                    <span class="badge bg-light text-dark mt-2">{{ perfil.get_tipo_usuario_display }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+
+            <!-- Estadísticas -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Estadísticas</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Mis Inmuebles
+                            <span class="badge bg-primary rounded-pill">{{ total_inmuebles }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Solicitudes Enviadas
+                            <span class="badge bg-info rounded-pill">{{ total_solicitudes_enviadas }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Solicitudes Recibidas
+                            <span class="badge bg-warning rounded-pill">{{ total_solicitudes_recibidas }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Mis Inmuebles -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-house me-2"></i>
+                        Mis Inmuebles ({{ mis_inmuebles.count }})
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-person me-2"></i>Usuario</span>
-                            <strong>{{ perfil.username }}</strong>
+                    {% if mis_inmuebles %}
+                        <div class="row">
+                            {% for inmueble in mis_inmuebles %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    {% if inmueble.imagen %}
+                                        <img src="{{ inmueble.imagen.url }}" class="card-img-top" alt="{{ inmueble.nombre }}" style="height: 150px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://picsum.photos/300/150?random={{ forloop.counter }}" class="card-img-top" alt="{{ inmueble.nombre }}">
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ inmueble.nombre }}</h6>
+                                        <p class="card-text small">
+                                            <i class="bi bi-geo-alt"></i> {{ inmueble.comuna_nombre }}<br>
+                                            <i class="bi bi-currency-dollar"></i> ${{ inmueble.precio_mensual }}/mes
+                                        </p>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="badge {% if inmueble.esta_publicado %}bg-success{% else %}bg-warning{% endif %}">
+                                                {% if inmueble.esta_publicado %}Publicado{% else %}En revisión{% endif %}
+                                            </span>
+                                            <a href="{% url 'actualizar_inmueble' inmueble.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-envelope me-2"></i>Email</span>
-                            <strong>{{ perfil.email|default:"No especificado" }}</strong>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-house display-4 text-muted mb-3"></i>
+                            <p class="text-muted">No tienes inmuebles registrados</p>
+                            <a href="{% url 'inmueble_create' %}" class="btn btn-primary">Publicar mi primer inmueble</a>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-card-text me-2"></i>RUT</span>
-                            <strong>{{ perfil.rut|default:"No especificado" }}</strong>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-calendar me-2"></i>Miembro desde</span>
-                            <strong>{{ perfil.date_joined|date:"d/m/Y" }}</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer text-center">
-                    <a href="{% url 'perfil_update' %}" class="btn btn-primary w-100">
-                        <i class="bi bi-pencil-square me-2"></i>Editar Perfil
-                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

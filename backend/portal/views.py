@@ -1,20 +1,19 @@
 # backend/portal/views.py
 from django.db import transaction
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.generic import (ListView, CreateView, UpdateView, DeleteView, DetailView)
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.http import JsonResponse
 import logging
@@ -42,6 +41,48 @@ from .forms import (
     SolicitudArriendoForm,
     PerfilUsuarioForm
 )
+
+
+class BasePermissionMixin(UserPassesTestMixin):
+    """Mixin base simplificado para permisos"""
+    
+    def test_func(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        
+        # Verificar permisos específicos
+        permisos_requeridos = getattr(self, 'permisos_requeridos', [])
+        if permisos_requeridos:
+            return any(user.has_perm(permiso) for permiso in permisos_requeridos)
+        
+        # Verificar por tipo de usuario
+        tipo_usuario_requerido = getattr(self, 'tipo_usuario_requerido', None)
+        if tipo_usuario_requerido:
+            return user.tipo_usuario == tipo_usuario_requerido
+        
+        return True
+    
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            messages.error(self.request, "No tienes permisos para acceder a esta página.")
+            return redirect('perfil')
+        return redirect('login')
+
+# Mixins simplificados
+class ArrendadorMixin(BasePermissionMixin):
+    tipo_usuario_requerido = 'ARRENDADOR'
+
+class AdministradorMixin(BasePermissionMixin):
+    tipo_usuario_requerido = 'ADMINISTRADOR'
+
+class PuedeGestionarInmueblesMixin(BasePermissionMixin):
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and (
+            user.tipo_usuario in ['ARRENDADOR', 'ADMINISTRADOR'] or
+            user.has_perm('portal.agregar_inmueble')
+        )
 
 logger = logging.getLogger(__name__)
 
@@ -213,44 +254,23 @@ class ComunaDeleteView(PuedeGestionarComunasMixin, DeleteView):
 #CRUD INMUEBLE
 ##########################################################
 
-class InmueblesListView(PermisoRequeridoMixin, ListView):
+class InmueblesListView(ListView):
     model = Inmueble
-    template_name = 'web/home.html' # Ojo: esta vista se usa para el home, pero su nombre es InmueblesListView.
-                                   # Podría ser confuso.
+    template_name = 'inmuebles/inmueble_list.html'
     context_object_name = 'inmuebles'
+    paginate_by = 9
     
-    def test_func(self):
-        # Todos los usuarios autenticados y no autenticados pueden ver inmuebles publicados en el home.
-        # Si esta vista es específicamente para listar "todos" los inmuebles gestionables,
-        # entonces el permiso 'portal.ver_todos_inmuebles' o 'portal.gestionar_inmueble' debería aplicarse.
-        # Para el home, creo que es mejor que sea accesible por todos.
-        return True # Permitir a todos ver el home. La lógica de queryset filtra lo que ven.
-
     def get_queryset(self):
-        # Solo mostrar inmuebles publicados
-        return Inmueble.objects.filter(esta_publicado=True).order_by('-creado')
+        # Solo mostrar inmuebles publicados para usuarios normales
+        queryset = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')
         
-        # Si la vista es la del HOME, queremos que todos vean los publicados
-        if self.request.resolver_match.url_name == 'home':
-             return queryset.filter(esta_publicado=True)
-
-        # Si esta vista se usa para una gestión de inmuebles (ej: '/listar_inmuebles/'), 
-        # entonces aplicamos la lógica de permisos.
-        if user.is_authenticated:
-            # Administradores ven todos los inmuebles
-            if user.has_perm('portal.ver_todos_inmuebles') or user.tipo_usuario == 'ADMINISTRADOR':
-                return queryset
-            
-            # Arrendadores ven solo sus inmuebles
-            if user.has_perm('portal.gestionar_inmueble') or user.tipo_usuario == 'ARRENDADOR':
-                return queryset.filter(propietario=user)
-            
-            # Arrendatarios, si llegan aquí, solo verían publicados (aunque ya se filtró en el home)
-            return queryset.filter(esta_publicado=True) 
+        user = self.request.user
+        # Administradores pueden ver todos los inmuebles
+        if user.is_authenticated and (user.is_superuser or user.tipo_usuario == 'ADMINISTRADOR'):
+            queryset = Inmueble.objects.all().order_by('-creado')
         
-        # Usuarios no autenticados solo ven publicados (si 'esta_publicado' existe)
-        return queryset.filter(esta_publicado=True) if hasattr(Inmueble, 'esta_publicado') else queryset.none()
-
+        logger.info(f"InmueblesListView - Mostrando {queryset.count()} inmuebles")
+        return queryset
 
 class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     model = Inmueble
@@ -258,20 +278,63 @@ class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     form_class = InmuebleForm
     
     def get_success_url(self):
-        messages.success(self.request, 'Inmueble creado exitosamente.')
-        return reverse_lazy('inmuebles/inmueble_list')
+        return reverse_lazy('perfil')
     
     def form_valid(self, form):
-        form.instance.propietario = self.request.user
+        try:
+            # Asignar propietario automáticamente
+            form.instance.propietario = self.request.user
+            
+            # Determinar estado de publicación
+            puede_publicar = (
+                self.request.user.has_perm('portal.publicar_inmueble') or 
+                self.request.user.tipo_usuario == 'ADMINISTRADOR'
+            )
+            form.instance.esta_publicado = puede_publicar
+            
+            # Guardar nombres de ubicación
+            self._guardar_ubicacion(form)
+            
+            response = super().form_valid(form)
+            
+            # Mensaje de éxito
+            if puede_publicar:
+                messages.success(self.request, 'INMUEBLE_CREADO_EXITOSAMENTE')
+            else:
+                messages.success(self.request, 'INMUEBLE_CREADO_PENDIENTE')
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error al crear inmueble: {e}")
+            messages.error(self.request, 'Error al crear el inmueble. Por favor intenta nuevamente.')
+            return self.form_invalid(form)
+    
+    def _guardar_ubicacion(self, form):
+        """Método auxiliar para guardar nombres de región y comuna"""
+        region_codigo = form.cleaned_data.get('region_codigo')
+        comuna_codigo = form.cleaned_data.get('comuna_codigo')
         
-        # Solo administradores pueden publicar inmediatamente
-        if self.request.user.has_perm('portal.publicar_inmueble'):
-            form.instance.esta_publicado = True
-        else:
-            form.instance.esta_publicado = False
-            messages.info(self.request, 'Tu inmueble será revisado antes de ser publicado.')
+        if region_codigo:
+            try:
+                regiones = ChileanLocationService.get_regiones()
+                region_nombre = next((r['nombre'] for r in regiones if r['codigo'] == region_codigo), '')
+                form.instance.region_nombre = region_nombre
+            except Exception as e:
+                logger.error(f"Error obteniendo nombre de región: {e}")
         
-        return super().form_valid(form)
+        if comuna_codigo and region_codigo:
+            try:
+                comunas = ChileanLocationService.get_comunas_by_region(region_codigo)
+                comuna_nombre = next((c['nombre'] for c in comunas if c['codigo'] == comuna_codigo), '')
+                form.instance.comuna_nombre = comuna_nombre
+            except Exception as e:
+                logger.error(f"Error obteniendo nombre de comuna: {e}")
+    
+    def form_invalid(self, form):
+        logger.error(f"Formulario inválido: {form.errors}")
+        messages.error(self.request, 'Por favor corrige los errores en el formulario.')
+        return super().form_invalid(form)
 
 class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):
     model = Inmueble
@@ -465,26 +528,42 @@ class PerfilView(DetailView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Solicitadas por mí (si soy arrendatario)
-        enviadas = SolicitudArriendo.objects.filter(
-            arrendatario=user
-        ).select_related('inmueble').order_by('-creado')
+        try:
+            # Mis inmuebles (si soy arrendador o administrador)
+            mis_inmuebles = Inmueble.objects.filter(propietario=user).order_by('-creado')
+            
+            # Solicitadas por mí (si soy arrendatario)
+            enviadas = SolicitudArriendo.objects.filter(
+                arrendatario=user
+            ).select_related('inmueble').order_by('-creado')
 
-        # Recibidas en mis inmuebles (si soy arrendador)
-        recibidas = SolicitudArriendo.objects.filter(
-            inmueble__propietario=user
-        ).select_related('inmueble', 'arrendatario').order_by('-creado')
+            # Recibidas en mis inmuebles (si soy arrendador)
+            recibidas = SolicitudArriendo.objects.filter(
+                inmueble__propietario=user
+            ).select_related('inmueble', 'arrendatario').order_by('-creado')
 
-        # Mis inmuebles (si soy arrendador)
-        mis_inmuebles = Inmueble.objects.filter(propietario=user)
+            context.update({
+                'enviadas': enviadas,
+                'recibidas': recibidas,
+                'mis_inmuebles': mis_inmuebles,
+                'total_inmuebles': mis_inmuebles.count(),
+                'total_solicitudes_enviadas': enviadas.count(),
+                'total_solicitudes_recibidas': recibidas.count(),
+            })
+            
+        except Exception as e:
+            logger.error(f"Error en PerfilView: {e}")
+            # En caso de error, establecer valores por defecto
+            context.update({
+                'enviadas': [],
+                'recibidas': [],
+                'mis_inmuebles': [],
+                'total_inmuebles': 0,
+                'total_solicitudes_enviadas': 0,
+                'total_solicitudes_recibidas': 0,
+            })
 
-        context.update({
-            'enviadas': enviadas,
-            'recibidas': recibidas,
-            'mis_inmuebles': mis_inmuebles,
-        })
         return context
-
 
 #login/logout/register
 ##########################################################
@@ -562,9 +641,10 @@ class CustomLogoutView(LogoutView):
 def home_view(request):
     """Vista para la página de inicio que muestra propiedades publicadas"""
     try:
-        inmuebles = Inmueble.objects.filter(esta_publicado=True)
+        # Mostrar inmuebles publicados, ordenados por los más recientes
+        inmuebles = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')[:6]
+        logger.info(f"Home - Mostrando {inmuebles.count()} inmuebles publicados")
         return render(request, 'web/home.html', {'inmuebles': inmuebles})
     except Exception as e:
         logger.error(f"Error en home_view: {e}")
-        # En caso de error, mostrar lista vacía
         return render(request, 'web/home.html', {'inmuebles': []})

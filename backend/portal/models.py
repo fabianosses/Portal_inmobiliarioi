@@ -7,6 +7,8 @@ from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.db import transaction 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 import uuid
 
 # Create your models here.
@@ -46,13 +48,15 @@ class Inmueble(models.Model):
     nombre = models.CharField(max_length=100)
     imagen = models.ImageField(upload_to='inmuebles/', default='sin_imagen/')
     descripcion = models.TextField()
-    m2_construidos = models.FloatField(default=0)
-    m2_totales = models.FloatField(default=0)
+    m2_construidos = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    m2_totales = models.FloatField(default=0, validators=[MinValueValidator(0)])
     estacionamientos = models.PositiveSmallIntegerField(default=0)
     habitaciones = models.PositiveSmallIntegerField(default=0)
     banos = models.PositiveSmallIntegerField(default=0)
     direccion = models.CharField(max_length=100)
-    precio_mensual = models.DecimalField(max_digits=8, decimal_places=2)
+    precio_mensual = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        help_text="Precio mensual en pesos chilenos")
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
     region_codigo = models.CharField(max_length=10, blank=True, null=True, verbose_name='Código de Región')
@@ -78,6 +82,22 @@ class Inmueble(models.Model):
     
     def __str__(self):
         return f" {self.id} {self.propietario} {self.nombre}"
+
+    def clean(self):
+        """Validaciones adicionales del modelo"""
+        if self.m2_construidos > self.m2_totales:
+            raise ValidationError({
+                'm2_construidos': 'Los m² construidos no pueden ser mayores a los m² totales'
+            })
+        
+        if self.precio_mensual and self.precio_mensual <= 0:
+            raise ValidationError({
+                'precio_mensual': 'El precio mensual debe ser mayor a 0'
+            })
+    
+    def save(self, *args, **kwargs):
+        self.clean()  # Ejecutar validaciones antes de guardar
+        super().save(*args, **kwargs)
 
 class SolicitudArriendo(models.Model):
     class EstadoSolicitud(models.TextChoices):
