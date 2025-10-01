@@ -1,7 +1,5 @@
 /* backend/portal/static/portal/css/styles.css */
-/* Estilos personalizados */
-
-/* ===== VARIABLES Y CONFIGURACIÓN GENERAL ===== */
+/* Estilos mejorados y optimizados */
 :root {
     --primary-color: #0d6efd;
     --secondary-color: #6c757d;
@@ -14,377 +12,66 @@
     --font-primary: 'Poppins', sans-serif;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Estructura mejorada para formularios de inmuebles */
+.inmueble-form-container {
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-body {
-    font-family: var(--font-primary);
-    line-height: 1.6;
-    color: var(--dark-color);
-    background-color: #ffffff;
-}
-
-/* ===== COMPONENTES GENERALES ===== */
-.hero-section {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #0a58ca 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="rgba(255,255,255,0.05)"><circle cx="50" cy="50" r="2"/></svg>') repeat;
-    animation: float 20s infinite linear;
-}
-
-@keyframes float {
-    0% { transform: translateY(0px) translateX(0px); }
-    100% { transform: translateY(-100px) translateX(-100px); }
-}
-
-.min-vh-50 {
-    min-height: 50vh;
-}
-
-/* ===== CARDS DE PROPIEDADES ===== */
-.property-card {
-    transition: all 0.3s ease;
-    border: none;
-    border-radius: 15px;
-    overflow: hidden;
-}
-
-.property-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15) !important;
-}
-
-.property-card .card-img-top {
-    transition: transform 0.3s ease;
-}
-
-.property-card:hover .card-img-top {
-    transform: scale(1.05);
-}
-
-.property-features i {
-    width: 20px;
-    text-align: center;
-    margin-right: 5px;
-}
-
-/* ===== BOTONES PERSONALIZADOS ===== */
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), #0a58ca);
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
-}
-
-.btn-outline-primary {
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-primary:hover {
-    transform: translateY(-2px);
-}
-
-/* ===== NAVBAR PERSONALIZADA ===== */
-.navbar-brand {
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.navbar-dark {
-    background: linear-gradient(135deg, var(--dark-color), #343a40) !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.nav-link {
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.nav-link:hover {
-    color: var(--primary-color) !important;
-}
-
-/* ===== FORMULARIOS ===== */
-.form-control {
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-    padding: 12px 15px;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    transform: translateY(-1px);
-}
-
-.form-label {
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--dark-color);
-}
-
-/* ===== ICONOS Y FEATURES ===== */
-.feature-icon {
-    transition: all 0.3s ease;
-    border-radius: 20px;
-}
-
-.feature-icon:hover {
-    transform: scale(1.1) rotate(5deg);
-}
-
-.bi {
-    vertical-align: -0.125em;
-}
-
-/* ===== ALERTS PERSONALIZADOS ===== */
-.alert {
-    border: none;
+.form-section {
+    background: #f8f9fa;
     border-radius: 10px;
-    border-left: 4px solid;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.alert-success {
-    border-left-color: var(--success-color);
-    background: linear-gradient(135deg, #d1e7dd, #f8f9fa);
+.form-section h5 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-.alert-danger {
-    border-left-color: var(--danger-color);
-    background: linear-gradient(135deg, #f8d7da, #f8f9fa);
-}
-
-.alert-warning {
-    border-left-color: var(--warning-color);
-    background: linear-gradient(135deg, #fff3cd, #f8f9fa);
-}
-
-.alert-info {
-    border-left-color: var(--info-color);
-    background: linear-gradient(135deg, #cff4fc, #f8f9fa);
-}
-
-/* ===== MODALES ===== */
-.modal-content {
-    border-radius: 15px;
-    border: none;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    border-bottom: 2px solid #e9ecef;
-    border-radius: 15px 15px 0 0;
-}
-
-.modal-footer {
-    border-top: 2px solid #e9ecef;
-    border-radius: 0 0 15px 15px;
-}
-
-/* ===== FOOTER ===== */
-footer {
-    background: linear-gradient(135deg, var(--dark-color), #343a40) !important;
-}
-
-footer a {
-    transition: color 0.3s ease;
-}
-
-footer a:hover {
-    color: var(--primary-color) !important;
-}
-
-.social-links a {
-    transition: all 0.3s ease;
-}
-
-.social-links a:hover {
-    transform: translateY(-3px);
-    color: var(--primary-color) !important;
-}
-
-/* ===== BADGES ===== */
-.badge {
-    font-weight: 500;
-    border-radius: 6px;
-}
-
-/* ===== PAGINACIÓN ===== */
-.pagination .page-link {
-    border-radius: 8px;
-    margin: 0 3px;
-    border: none;
-    color: var(--dark-color);
-}
-
-.pagination .page-item.active .page-link {
-    background: linear-gradient(135deg, var(--primary-color), #0a58ca);
-    border: none;
-}
-
-/* ===== TABLAS ===== */
-.table {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.table th {
-    background: linear-gradient(135deg, var(--primary-color), #0a58ca);
-    color: white;
-    border: none;
-    font-weight: 600;
-}
-
-.table td {
-    border-color: #e9ecef;
-    vertical-align: middle;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .hero-section .display-4 {
-        font-size: 2rem;
-    }
-    
-    .property-card {
-        margin-bottom: 20px;
-    }
-    
-    .navbar-nav {
-        text-align: center;
-    }
-    
-    .btn-lg {
-        padding: 10px 20px;
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .container {
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-    
-    .hero-section {
-        padding: 40px 0;
-    }
-}
-
-/* ===== ANIMACIONES ===== */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in {
-    animation: fadeIn 0.6s ease-out;
-}
-
-/* ===== UTILIDADES PERSONALIZADAS ===== */
-.text-gradient {
-    background: linear-gradient(135deg, var(--primary-color), #0a58ca);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.shadow-custom {
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1) !important;
-}
-
-.border-radius-custom {
-    border-radius: 15px !important;
-}
-
-/* ===== LOADING STATES ===== */
-.loading {
-    opacity: 0.7;
-    pointer-events: none;
-}
-
-.spinner-border-custom {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-width: 2px;
-}
-
-/* ===== ESTILOS PARA FORMULARIOS DE INMUEBLES ===== */
-.image-preview {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 10px;
-    border: 2px dashed #dee2e6;
-    padding: 10px;
-}
-
-.required-field::after {
-    content: " *";
+/* Mejoras para mensajes de error */
+.field-error {
     color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
 }
 
-/* ===== ESTILOS PARA EL PERFIL DE USUARIO ===== */
-.profile-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid var(--primary-color);
+.form-control.is-invalid {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
-.profile-stats {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-radius: 15px;
-    padding: 20px;
+/* Estilos para el perfil de usuario mejorados */
+.profile-inmuebles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
 
-/* ===== ESTILOS PARA LAS SOLICITUDES ===== */
-.solicitud-card {
-    border-left: 4px solid var(--primary-color);
+.inmueble-mini-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
     transition: all 0.3s ease;
 }
 
-.solicitud-card:hover {
-    transform: translateX(5px);
+.inmueble-mini-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
 }
 
-.estado-pendiente {
-    border-left-color: var(--warning-color);
-}
-
-.estado-aprobada {
-    border-left-color: var(--success-color);
-}
-
-.estado-rechazada {
-    border-left-color: var(--danger-color);
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .profile-inmuebles-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-section {
+        padding: 1rem;
+    }
 }

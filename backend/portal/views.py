@@ -642,9 +642,23 @@ def home_view(request):
     """Vista para la página de inicio que muestra propiedades publicadas"""
     try:
         # Mostrar inmuebles publicados, ordenados por los más recientes
-        inmuebles = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')[:6]
+        inmuebles = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')[:8]
+        
+        # Obtener estadísticas para mostrar en el home
+        total_inmuebles = Inmueble.objects.filter(esta_publicado=True).count()
+        total_arrendadores = PerfilUsuario.objects.filter(
+            tipo_usuario=PerfilUsuario.TipoUsuario.ARRENDADOR
+        ).count()
+        
         logger.info(f"Home - Mostrando {inmuebles.count()} inmuebles publicados")
-        return render(request, 'web/home.html', {'inmuebles': inmuebles})
+        
+        context = {
+            'inmuebles': inmuebles,
+            'total_inmuebles': total_inmuebles,
+            'total_arrendadores': total_arrendadores,
+        }
+        return render(request, 'web/home.html', context)
+        
     except Exception as e:
         logger.error(f"Error en home_view: {e}")
         return render(request, 'web/home.html', {'inmuebles': []})

@@ -4,11 +4,15 @@
 
 {% block title %}{% if object %}Editar{% else %}Crear{% endif %} Inmueble - Inmobiliaria Conecta{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'portal/css/styles.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow-custom border-0">
+            <div class="card shadow-custom border-0 inmueble-form-container">
                 <div class="card-header bg-primary text-white py-3">
                     <h3 class="mb-0">
                         <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
@@ -17,11 +21,13 @@
                 </div>
                 
                 <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data" id="inmuebleForm">
+                    <form method="post" enctype="multipart/form-data" id="inmuebleForm" novalidate>
                         {% csrf_token %}
                         
+                        <!-- Mensajes de error generales -->
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
                                 {% for error in form.non_field_errors %}
                                     {{ error }}
                                 {% endfor %}
@@ -29,109 +35,156 @@
                         {% endif %}
 
                         <div class="row">
-                            <!-- Información Básica -->
+                            <!-- Sección de Información Básica -->
                             <div class="col-md-6">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-info-circle"></i> Información Básica
-                                </h5>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">Nombre del Inmueble</label>
-                                    {{ form.nombre }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.tipo_inmueble.id_for_label }}" class="form-label required-field">Tipo de Inmueble</label>
-                                    {{ form.tipo_inmueble }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.descripcion.id_for_label }}" class="form-label required-field">Descripción</label>
-                                    {{ form.descripcion }}
-                                    <div class="form-text">Describe detalladamente tu propiedad</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.imagen.id_for_label }}" class="form-label">
-                                        {% if object %}Cambiar{% else %}Subir{% endif %} Imagen
-                                    </label>
-                                    {{ form.imagen }}
-                                    {% if object and object.imagen %}
-                                    <div class="mt-2">
-                                        <img src="{{ object.imagen.url }}" alt="Imagen actual" class="image-preview img-thumbnail" style="max-width: 200px;">
+                                <div class="form-section">
+                                    <h5><i class="bi bi-info-circle"></i> Información Básica</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre del Inmueble</label>
+                                        {{ form.nombre }}
+                                        {% for error in form.nombre.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
                                     </div>
-                                    {% endif %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.tipo_inmueble.id_for_label }}" class="form-label">Tipo de Inmueble</label>
+                                        {{ form.tipo_inmueble }}
+                                        {% for error in form.tipo_inmueble.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.descripcion.id_for_label }}" class="form-label">Descripción</label>
+                                        {{ form.descripcion }}
+                                        <div class="form-text">Describe detalladamente tu propiedad</div>
+                                        {% for error in form.descripcion.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-section">
+                                    <h5><i class="bi bi-image"></i> Imagen del Inmueble</h5>
+                                    <div class="mb-3">
+                                        <label for="{{ form.imagen.id_for_label }}" class="form-label">
+                                            {% if object %}Cambiar{% else %}Subir{% endif %} Imagen
+                                        </label>
+                                        {{ form.imagen }}
+                                        {% if object and object.imagen %}
+                                        <div class="mt-2">
+                                            <img src="{{ object.imagen.url }}" alt="Imagen actual" class="image-preview img-thumbnail">
+                                            <div class="form-text">Imagen actual</div>
+                                        </div>
+                                        {% endif %}
+                                        {% for error in form.imagen.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Ubicación -->
+                            <!-- Sección de Ubicación y Precio -->
                             <div class="col-md-6">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-geo-alt"></i> Ubicación
-                                </h5>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.region_codigo.id_for_label }}" class="form-label required-field">Región</label>
-                                    {{ form.region_codigo }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.comuna_codigo.id_for_label }}" class="form-label required-field">Comuna</label>
-                                    {{ form.comuna_codigo }}
-                                    <div class="form-text" id="comuna-loading" style="display: none;">
-                                        <i class="bi bi-arrow-repeat spinner"></i> Cargando comunas...
+                                <div class="form-section">
+                                    <h5><i class="bi bi-geo-alt"></i> Ubicación</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.region_codigo.id_for_label }}" class="form-label">Región</label>
+                                        {{ form.region_codigo }}
+                                        {% for error in form.region_codigo.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="id_comuna_codigo" class="form-label required-field">Comuna</label>
+                                        
+                                        <!-- El select se carga dinámicamente por JavaScript -->
+                                        <select name="comuna_codigo" id="id_comuna_codigo" class="form-control" disabled required>
+                                            <option value="">Selecciona una región primero</option>
+                                        </select>
+
+                                        <div class="form-text" id="comuna-loading" style="display: none;">
+                                            <i class="bi bi-arrow-repeat spinner"></i> Cargando comunas...
+                                        </div>
+                                        {% for error in form.comuna_codigo.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.direccion.id_for_label }}" class="form-label">Dirección</label>
+                                        {{ form.direccion }}
+                                        {% for error in form.direccion.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
                                     </div>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label for="{{ form.direccion.id_for_label }}" class="form-label required-field">Dirección</label>
-                                    {{ form.direccion }}
-                                </div>
-                                
-                                <h5 class="border-bottom pb-2 mb-3 mt-4">
-                                    <i class="bi bi-currency-dollar"></i> Precio
-                                </h5>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.precio_mensual.id_for_label }}" class="form-label required-field">Precio Mensual ($)</label>
-                                    {{ form.precio_mensual }}
+                                <div class="form-section">
+                                    <h5><i class="bi bi-currency-dollar"></i> Precio</h5>
+                                    <div class="mb-3">
+                                        <label for="{{ form.precio_mensual.id_for_label }}" class="form-label">Precio Mensual ($)</label>
+                                        {{ form.precio_mensual }}
+                                        <div class="form-text">Precio mensual en pesos chilenos</div>
+                                        {% for error in form.precio_mensual.errors %}
+                                            <div class="field-error">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Características -->
-                        <h5 class="border-bottom pb-2 mb-3 mt-4">
-                            <i class="bi bi-list-check"></i> Características
-                        </h5>
-                        
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label for="{{ form.m2_construidos.id_for_label }}" class="form-label">m² Construidos</label>
-                                {{ form.m2_construidos }}
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="{{ form.m2_totales.id_for_label }}" class="form-label">m² Totales</label>
-                                {{ form.m2_totales }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.habitaciones.id_for_label }}" class="form-label">Habitaciones</label>
-                                {{ form.habitaciones }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.banos.id_for_label }}" class="form-label">Baños</label>
-                                {{ form.banos }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.estacionamientos.id_for_label }}" class="form-label">Estacionamientos</label>
-                                {{ form.estacionamientos }}
+                        <!-- Sección de Características -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-list-check"></i> Características</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.m2_construidos.id_for_label }}" class="form-label">m² Construidos</label>
+                                    {{ form.m2_construidos }}
+                                    {% for error in form.m2_construidos.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.m2_totales.id_for_label }}" class="form-label">m² Totales</label>
+                                    {{ form.m2_totales }}
+                                    {% for error in form.m2_totales.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label for="{{ form.habitaciones.id_for_label }}" class="form-label">Habitaciones</label>
+                                    {{ form.habitaciones }}
+                                    {% for error in form.habitaciones.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label for="{{ form.banos.id_for_label }}" class="form-label">Baños</label>
+                                    {{ form.banos }}
+                                    {% for error in form.banos.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label for="{{ form.estacionamientos.id_for_label }}" class="form-label">Estacionamientos</label>
+                                    {{ form.estacionamientos }}
+                                    {% for error in form.estacionamientos.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'inmueble_list' %}" class="btn btn-secondary">
+                            <a href="{% if object %}{% url 'perfil' %}{% else %}{% url 'inmueble_list' %}{% endif %}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="bi bi-check-circle"></i> 
                                 {% if object %}Actualizar{% else %}Crear{% endif %} Inmueble
                             </button>
@@ -145,196 +198,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-
-// Función para mostrar mensaje temporal de éxito
-function mostrarMensajeExito(mensaje = '¡Éxito! Tu inmueble fue ingresado con éxito') {
-    const mensajeDiv = document.createElement('div');
-    mensajeDiv.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
-    mensajeDiv.style.cssText = `
-        min-width: 300px;
-        text-align: center;
-        animation: fadeInOut 2s ease-in-out;
-        z-index: 9999;
-    `;
-    mensajeDiv.innerHTML = `
-        <i class="bi bi-check-circle-fill me-2"></i>
-        <strong>${mensaje}</strong>
-    `;
-    document.body.appendChild(mensajeDiv);
-    
-    setTimeout(() => {
-        if (mensajeDiv.parentNode) {
-            mensajeDiv.remove();
-        }
-    }, 2000);
-}
-
-// Cargar comunas dinámicamente
-async function cargarComunas() {
-    const regionSelect = document.getElementById('id_region_codigo');
-    const comunaSelect = document.getElementById('id_comuna_codigo');
-    const loadingDiv = document.getElementById('comuna-loading');
-    
-    if (!regionSelect || !comunaSelect) return;
-    
-    const regionCode = regionSelect.value;
-    
-    // Resetear comuna
-    comunaSelect.disabled = true;
-    comunaSelect.innerHTML = '<option value="">Cargando...</option>';
-    
-    if (!regionCode) {
-        comunaSelect.innerHTML = '<option value="">Selecciona una región primero</option>';
-        return;
-    }
-    
-    // Mostrar loading
-    if (loadingDiv) loadingDiv.style.display = 'block';
-    
-    try {
-        const response = await fetch(`/cargar-comunas/?region=${encodeURIComponent(regionCode)}`);
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-            comunaSelect.innerHTML = '<option value="">Selecciona una comuna</option>';
-            data.forEach(comuna => {
-                const option = document.createElement('option');
-                option.value = comuna.codigo;
-                option.textContent = comuna.nombre;
-                comunaSelect.appendChild(option);
-            });
-            comunaSelect.disabled = false;
-        } else {
-            throw new Error('Formato de respuesta inválido');
-        }
-    } catch (error) {
-        console.error('Error cargando comunas:', error);
-        comunaSelect.innerHTML = '<option value="">Error cargando comunas</option>';
-    } finally {
-        if (loadingDiv) loadingDiv.style.display = 'none';
-    }
-}
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    const regionSelect = document.getElementById('id_region_codigo');
-    const comunaSelect = document.getElementById('id_comuna_codigo');
-    
-    // Configurar eventos
-    if (regionSelect) {
-        regionSelect.addEventListener('change', cargarComunas);
-        
-        // Cargar comunas si ya hay una región seleccionada
-        if (regionSelect.value) {
-            setTimeout(cargarComunas, 100);
-        }
-    }
-    
-    // Verificar mensajes de éxito
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        if (alert.textContent.includes('INMUEBLE_CREADO_EXITOSAMENTE')) {
-            mostrarMensajeExito();
-            alert.style.display = 'none';
-        } else if (alert.textContent.includes('INMUEBLE_CREADO_PENDIENTE')) {
-            mostrarMensajeExito('¡Éxito! Tu inmueble fue creado y está pendiente de revisión');
-            alert.style.display = 'none';
-        }
-    });
-});
-
-// Validación de imagen en tiempo real
-document.addEventListener('DOMContentLoaded', function() {
-    const imagenInput = document.querySelector('input[type="file"]');
-    if (imagenInput) {
-        imagenInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Validar tamaño
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('La imagen es demasiado grande. Máximo 5MB permitido.');
-                    e.target.value = '';
-                }
-                
-                // Validar tipo
-                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                if (!validTypes.includes(file.type)) {
-                    alert('Solo se permiten imágenes JPG, PNG o WebP.');
-                    e.target.value = '';
-                }
-            }
-        });
-    }
-});
-</script>
-
-<style>
-.required-field::after {
-    content: " *";
-    color: #dc3545;
-}
-
-.image-preview {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 8px;
-    border: 2px solid #dee2e6;
-}
-
-.card {
-    border-radius: 12px;
-}
-
-.shadow-custom {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.form-select:disabled {
-    background-color: #e9ecef;
-    opacity: 0.6;
-}
-
-/* Animaciones */
-@keyframes fadeInOut {
-    0% { 
-        opacity: 0; 
-        transform: translate(-50%, -20px); 
-    }
-    15% { 
-        opacity: 1; 
-        transform: translate(-50%, 0); 
-    }
-    85% { 
-        opacity: 1; 
-        transform: translate(-50%, 0); 
-    }
-    100% { 
-        opacity: 0; 
-        transform: translate(-50%, -20px); 
-    }
-}
-
-.alert-success {
-    animation: fadeInOut 2s ease-in-out forwards;
-}
-
-/* Mejoras visuales */
-.form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #0d6efd, #0a58ca);
-    border: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
-}
-</style>
+<script src="{% static 'portal/js/inmuebles.js' %}"></script>
 {% endblock %}

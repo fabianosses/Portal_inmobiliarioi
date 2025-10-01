@@ -144,6 +144,12 @@ STATICFILES_DIRS = [
     BASE_DIR / "portal" / "static",
 ]
 
+# Para desarrollo
+if DEBUG:
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'portal/static'),
+    ]
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

@@ -32,7 +32,7 @@ class InmuebleForm(forms.ModelForm):
     comuna_codigo = forms.ChoiceField(
         label='Comuna',
         required=True,
-        choices=[],
+        choices=[],  # Inicialmente vacío
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'id_comuna_codigo',
@@ -45,8 +45,8 @@ class InmuebleForm(forms.ModelForm):
         fields = [
             'nombre', 'imagen', 'descripcion', 'm2_construidos', 
             'm2_totales', 'estacionamientos', 'habitaciones', 'banos', 
-            'direccion', 'precio_mensual', 'tipo_inmueble',  # precio_mensual DEBE estar aquí
-            'region_codigo', 'comuna_codigo'
+            'direccion', 'precio_mensual', 'tipo_inmueble',
+            'region_codigo', 'comuna_codigo'  # MANTENER estos campos
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
@@ -65,6 +65,8 @@ class InmuebleForm(forms.ModelForm):
             'estacionamientos': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'tipo_inmueble': forms.Select(attrs={'class': 'form-control'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            # REMOVER los widgets para region_codigo y comuna_codigo 
+            # porque ya los definimos arriba en los fields
         }
         help_texts = {
             'precio_mensual': 'Precio mensual en pesos chilenos',
@@ -75,7 +77,67 @@ class InmuebleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cargar_regiones()
-        self._cargar_comunas_si_existe()
+        
+        # NO cargar comunas en el init del formulario
+        # Permitir cualquier valor para comuna_codigo
+        self.fields['comuna_codigo'].choices = []
+        
+        # Si estamos editando, cargar la comuna específica
+        if self.instance and self.instance.pk and self.instance.region_codigo and self.instance.comuna_codigo:
+            try:
+                comunas = ChileanLocationService.get_comunas_by_region(self.instance.region_codigo)
+                comuna_choices = [(c['codigo'], c['nombre']) for c in comunas]
+                self.fields['comuna_codigo'].choices = comuna_choices
+                self.fields['comuna_codigo'].widget.attrs.pop('disabled', None)
+            except Exception as e:
+                logger.error(f"Error cargando comunas para edición: {e}")
+
+    def clean_comuna_codigo(self):
+        """Validar que la comuna existe para la región seleccionada"""
+        comuna_codigo = self.cleaned_data.get('comuna_codigo')
+        region_codigo = self.cleaned_data.get('region_codigo')
+        
+        if not comuna_codigo:
+            raise forms.ValidationError("Debes seleccionar una comuna")
+        
+        if region_codigo:
+            try:
+                comunas = ChileanLocationService.get_comunas_by_region(region_codigo)
+                comuna_valida = any(comuna['codigo'] == comuna_codigo for comuna in comunas)
+                if not comuna_valida:
+                    raise forms.ValidationError("La comuna seleccionada no es válida para esta región")
+            except Exception as e:
+                logger.error(f"Error validando comuna: {e}")
+                raise forms.ValidationError("Error validando la comuna. Por favor, intenta nuevamente.")
+        
+        return comuna_codigo
+
+    def clean(self):
+        """Validaciones cruzadas mejoradas"""
+        cleaned_data = super().clean()
+        errors = {}
+        
+        region_codigo = cleaned_data.get('region_codigo')
+        comuna_codigo = cleaned_data.get('comuna_codigo')
+        
+        # Validar que si hay región, haya comuna y viceversa
+        if region_codigo and not comuna_codigo:
+            errors['comuna_codigo'] = 'Debes seleccionar una comuna'
+        
+        if comuna_codigo and not region_codigo:
+            errors['region_codigo'] = 'Debes seleccionar una región'
+        
+        # Otras validaciones existentes...
+        m2_construidos = cleaned_data.get('m2_construidos')
+        m2_totales = cleaned_data.get('m2_totales')
+        
+        if m2_construidos and m2_totales and m2_construidos > m2_totales:
+            errors['m2_construidos'] = 'Los m² construidos no pueden ser mayores a los m² totales'
+        
+        if errors:
+            raise forms.ValidationError(errors)
+        
+        return cleaned_data
 
     def _cargar_regiones(self):
         """Carga las regiones de forma segura"""
@@ -87,57 +149,7 @@ class InmuebleForm(forms.ModelForm):
             logger.error(f"Error cargando regiones: {e}")
             self.fields['region_codigo'].choices = [('', 'Error cargando regiones')]
 
-    def _cargar_comunas_si_existe(self):
-        """Carga comunas si el inmueble ya existe"""
-        if self.instance and self.instance.pk and self.instance.region_codigo:
-            try:
-                comunas = ChileanLocationService.get_comunas_by_region(self.instance.region_codigo)
-                comuna_choices = [('', 'Selecciona una comuna')] + [(c['codigo'], c['nombre']) for c in comunas]
-                self.fields['comuna_codigo'].choices = comuna_choices
-                self.fields['comuna_codigo'].widget.attrs.pop('disabled', None)
-            except Exception as e:
-                logger.error(f"Error cargando comunas para edición: {e}")
-
-    def clean(self):
-        """Validaciones cruzadas"""
-        cleaned_data = super().clean()
-        
-        m2_construidos = cleaned_data.get('m2_construidos')
-        m2_totales = cleaned_data.get('m2_totales')
-        
-        if m2_construidos and m2_totales and m2_construidos > m2_totales:
-            raise forms.ValidationError({
-                'm2_construidos': 'Los m² construidos no pueden ser mayores a los m² totales'
-            })
-        
-        return cleaned_data
-
-    def clean_precio_mensual(self):
-        precio = self.cleaned_data.get('precio_mensual')
-        if precio and precio <= 0:
-            raise forms.ValidationError("El precio debe ser mayor a 0")
-        return precio
-    
-    def clean_imagen(self):
-        imagen = self.cleaned_data.get('imagen')
-        
-        # Si no hay imagen o es un string (cuando no se cambia la imagen existente)
-        if not imagen or isinstance(imagen, str):
-            return imagen
-        
-        # Solo validar si es un archivo nuevo
-        if hasattr(imagen, 'size'):
-            # Validar tamaño máximo (5MB)
-            if imagen.size > 5 * 1024 * 1024:
-                raise forms.ValidationError("La imagen no puede ser mayor a 5MB")
-            
-            # Validar tipo de archivo
-            valid_extensions = ('.jpg', '.jpeg', '.png', '.webp')
-            if not imagen.name.lower().endswith(valid_extensions):
-                raise forms.ValidationError("Solo se permiten imágenes JPG, PNG o WebP")
-        
-        return imagen
-    
+    # Mantener los demás métodos existentes (save, _guardar_nombres_ubicacion, etc.)
     def save(self, commit=True):
         instance = super().save(commit=False)
         self._guardar_nombres_ubicacion(instance)

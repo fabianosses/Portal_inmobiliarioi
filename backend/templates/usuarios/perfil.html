@@ -59,52 +59,77 @@
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-8">
+
             <!-- Mis Inmuebles -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-house me-2"></i>
-                        Mis Inmuebles ({{ mis_inmuebles.count }})
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if mis_inmuebles %}
-                        <div class="row">
-                            {% for inmueble in mis_inmuebles %}
-                            <div class="col-md-6 mb-3">
-                                <div class="card h-100">
-                                    {% if inmueble.imagen %}
-                                        <img src="{{ inmueble.imagen.url }}" class="card-img-top" alt="{{ inmueble.nombre }}" style="height: 150px; object-fit: cover;">
-                                    {% else %}
-                                        <img src="https://picsum.photos/300/150?random={{ forloop.counter }}" class="card-img-top" alt="{{ inmueble.nombre }}">
-                                    {% endif %}
-                                    <div class="card-body">
-                                        <h6 class="card-title">{{ inmueble.nombre }}</h6>
-                                        <p class="card-text small">
-                                            <i class="bi bi-geo-alt"></i> {{ inmueble.comuna_nombre }}<br>
-                                            <i class="bi bi-currency-dollar"></i> ${{ inmueble.precio_mensual }}/mes
-                                        </p>
-                                        <div class="d-flex justify-content-between">
-                                            <span class="badge {% if inmueble.esta_publicado %}bg-success{% else %}bg-warning{% endif %}">
-                                                {% if inmueble.esta_publicado %}Publicado{% else %}En revisión{% endif %}
-                                            </span>
-                                            <a href="{% url 'actualizar_inmueble' inmueble.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                                        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-house me-2"></i>
+                    Mis Inmuebles ({{ mis_inmuebles.count }})
+                </h5>
+                {% if perfil.tipo_usuario == 'ARRENDADOR' or perfil.tipo_usuario == 'ADMINISTRADOR' %}
+                <a href="{% url 'inmueble_create' %}" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Agregar Inmueble
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if mis_inmuebles %}
+                    <div class="profile-inmuebles-grid">
+                        {% for inmueble in mis_inmuebles %}
+                        <div class="inmueble-mini-card">
+                            <div class="d-flex align-items-start mb-2">
+                                {% if inmueble.imagen %}
+                                    <img src="{{ inmueble.imagen.url }}" class="rounded me-3" 
+                                        alt="{{ inmueble.nombre }}" style="width: 80px; height: 60px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                        style="width: 80px; height: 60px;">
+                                        <i class="bi bi-house text-muted"></i>
                                     </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ inmueble.nombre }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-geo-alt"></i> {{ inmueble.comuna_nombre }}
+                                    </p>
+                                    <p class="text-primary fw-bold mb-0">${{ inmueble.precio_mensual }}/mes</p>
                                 </div>
                             </div>
-                            {% endfor %}
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="badge {% if inmueble.esta_publicado %}bg-success{% else %}bg-warning{% endif %}">
+                                    {% if inmueble.esta_publicado %}Publicado{% else %}En revisión{% endif %}
+                                </span>
+                                <div>
+                                    <a href="{% url 'actualizar_inmueble' inmueble.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'inmueble_list' %}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-house display-4 text-muted mb-3"></i>
-                            <p class="text-muted">No tienes inmuebles registrados</p>
-                            <a href="{% url 'inmueble_create' %}" class="btn btn-primary">Publicar mi primer inmueble</a>
-                        </div>
-                    {% endif %}
-                </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-house display-4 text-muted mb-3"></i>
+                        <p class="text-muted">No tienes inmuebles registrados</p>
+                        {% if perfil.tipo_usuario == 'ARRENDADOR' or perfil.tipo_usuario == 'ADMINISTRADOR' %}
+                            <a href="{% url 'inmueble_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Publicar mi primer inmueble
+                            </a>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <small>
+                                    Para publicar inmuebles necesitas ser Arrendador. 
+                                    <a href="{% url 'perfil_update' %}" class="alert-link">Actualiza tu perfil</a> si deseas cambiar tu tipo de usuario.
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
 
