@@ -1,5 +1,5 @@
 # backend/portal/views.py
-from django.db import transaction
+from django.db import transaction, models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib import messages
@@ -292,35 +292,32 @@ class InmueblesListView(ListView):
     paginate_by = 9
     
     def get_queryset(self):
-        # Solo mostrar inmuebles publicados para usuarios normales
-        queryset = Inmueble.objects.filter(esta_publicado=True).select_related('propietario').order_by('-creado')
-        
         user = self.request.user
-        # Administradores pueden ver todos los inmuebles
-        if user.is_authenticated and (user.is_superuser or user.tipo_usuario == 'ADMINISTRADOR'):
+        
+        # DEBUG: Log para ver qué está pasando
+        logger.info(f"InmueblesListView - Usuario: {user}, Tipo: {getattr(user, 'tipo_usuario', 'Anónimo')}")
+        
+        # Para usuarios normales y arrendatarios: solo inmuebles publicados
+        if not user.is_authenticated or user.tipo_usuario in ['ARRENDATARIO', None]:
+            queryset = Inmueble.objects.filter(esta_publicado=True).select_related('propietario').order_by('-creado')
+            logger.info(f"InmueblesListView - Arrendatario: {queryset.count()} inmuebles publicados")
+        
+        # Administradores y arrendadores pueden ver todos
+        elif user.is_superuser or user.tipo_usuario == 'ADMINISTRADOR':
             queryset = Inmueble.objects.all().select_related('propietario').order_by('-creado')
+            logger.info(f"InmueblesListView - Administrador: {queryset.count()} inmuebles totales")
         
-        logger.info(f"InmueblesListView - Mostrando {queryset.count()} inmuebles")
+        # Arrendadores ven sus inmuebles y los publicados
+        elif user.tipo_usuario == 'ARRENDADOR':
+            queryset = Inmueble.objects.filter(
+                models.Q(propietario=user) | models.Q(esta_publicado=True)
+            ).select_related('propietario').order_by('-creado')
+            logger.info(f"InmueblesListView - Arrendador: {queryset.count()} inmuebles")
         
-        # DEBUG: Log para verificar imágenes
-        for inmueble in queryset:
-            logger.info(f"Inmueble: {inmueble.nombre}, Imagen: {inmueble.imagen}, URL: {inmueble.imagen.url if inmueble.imagen else 'No image'}")
+        else:
+            queryset = Inmueble.objects.filter(esta_publicado=True).select_related('propietario').order_by('-creado')
         
         return queryset
-    
-    #debug
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Debug information
-        for inmueble in context['inmuebles']:
-            print(f"DEBUG - Inmueble: {inmueble.nombre}")
-            print(f"DEBUG - Tiene imagen: {bool(inmueble.imagen)}")
-            if inmueble.imagen:
-                print(f"DEBUG - URL de imagen: {inmueble.imagen.url}")
-                print(f"DEBUG - Path de imagen: {inmueble.imagen.path}")
-        
-        return context
 
 class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     model = Inmueble
@@ -616,6 +613,11 @@ class PerfilView(DetailView):
                 inmueble__propietario=user
             ).select_related('inmueble', 'arrendatario').order_by('-creado')
 
+            # ✅ NUEVO: Inmuebles pendientes para administradores
+            inmuebles_pendientes_count = 0
+            if user.tipo_usuario == 'ADMINISTRADOR' or user.is_superuser:
+                inmuebles_pendientes_count = Inmueble.objects.filter(esta_publicado=False).count()
+
             context.update({
                 'enviadas': enviadas,
                 'recibidas': recibidas,
@@ -623,11 +625,11 @@ class PerfilView(DetailView):
                 'total_inmuebles': mis_inmuebles.count(),
                 'total_solicitudes_enviadas': enviadas.count(),
                 'total_solicitudes_recibidas': recibidas.count(),
+                'inmuebles_pendientes_count': inmuebles_pendientes_count,  # ✅ NUEVO
             })
             
         except Exception as e:
             logger.error(f"Error en PerfilView: {e}")
-            # En caso de error, establecer valores por defecto
             context.update({
                 'enviadas': [],
                 'recibidas': [],
@@ -635,6 +637,7 @@ class PerfilView(DetailView):
                 'total_inmuebles': 0,
                 'total_solicitudes_enviadas': 0,
                 'total_solicitudes_recibidas': 0,
+                'inmuebles_pendientes_count': 0,  # ✅ NUEVO
             })
 
         return context
