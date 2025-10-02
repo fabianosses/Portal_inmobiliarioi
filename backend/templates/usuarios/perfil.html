@@ -78,25 +78,35 @@
             </div>
             <div class="card-body">
                 {% if mis_inmuebles %}
-                    <div class="profile-inmuebles-grid">
-                       {% for inmueble in mis_inmuebles %}
-                        <div class="inmueble-mini-card">
-                            <h6>{{ inmueble.nombre }}</h6>
-                            <p class="small">{{ inmueble.descripcion|truncatewords:10 }}</p>
-                            
-                            <!-- Mostrar estado -->
-                            {% if inmueble.esta_publicado %}
-                                <span class="badge bg-success">Publicado</span>
-                            {% else %}
-                                <span class="badge bg-warning">Pendiente de Aprobación</span>
-                            {% endif %}
-                            
-                            <div class="mt-2">
-                                <a href="{% url 'actualizar_inmueble' inmueble.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                            </div>
+
+                <!-- Mis Inmuebles -->
+                <div class="profile-inmuebles-grid">
+                    {% for inmueble in mis_inmuebles %}
+                    <div class="inmueble-mini-card">
+                        <h6>{{ inmueble.nombre }}</h6>
+                        <p class="small">{{ inmueble.descripcion|truncatewords:10 }}</p>
+                        
+                        <!-- Estado -->
+                        {% if inmueble.esta_publicado %}
+                            <span class="badge bg-success">Publicado</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pendiente</span>
+                        {% endif %}
+                        
+                        <!-- Botones de acción -->
+                        <div class="mt-2 btn-group btn-group-sm">
+                            <a href="{% url 'actualizar_inmueble' inmueble.pk %}" 
+                            class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'borrar_inmueble' inmueble.pk %}" 
+                            class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endfor %}
+                </div>
                 {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-house display-4 text-muted mb-3"></i>

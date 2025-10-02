@@ -391,42 +391,60 @@ class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
         logger.error(f"Formulario inválido: {form.errors}")
         messages.error(self.request, 'Por favor corrige los errores en el formulario.')
         return super().form_invalid(form)
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        
+        # Verificar que el usuario tenga permisos para crear inmuebles
+        if not (request.user.tipo_usuario in ['ARRENDADOR', 'ADMINISTRADOR'] or 
+                request.user.has_perm('portal.agregar_inmueble')):
+            messages.error(request, "No tienes permisos para publicar inmuebles.")
+            return redirect('perfil')
+        
+        return super().dispatch(request, *args, **kwargs)
 
 class InmuebleUpdateView(PuedeGestionarInmueblesMixin, UpdateView):
     model = Inmueble
     template_name = 'inmuebles/inmueble_form.html'
     form_class = InmuebleForm
-    success_url = reverse_lazy('inmueble_list')
+    
+    def get_success_url(self):
+        return reverse_lazy('perfil')
     
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
+        
         # Si no es administrador, solo puede editar sus propios inmuebles
-        if not (user.is_superuser or user.has_perm('portal.ver_todos_inmuebles')): # 'is_superuser' para cubrir el admin por defecto
+        if not (user.is_superuser or user.has_perm('portal.editar_todos_inmuebles')):
             queryset = queryset.filter(propietario=user)
         return queryset
-
+    
     def form_valid(self, form):
-        # Permiso para publicar/despublicar
-        if 'esta_publicado' in form.cleaned_data and not self.request.user.has_perm('portal.publicar_inmueble'):
-            # Si el usuario no tiene permiso para publicar, no permitimos que cambie el campo
-            del form.cleaned_data['esta_publicado'] # Eliminar el campo del formulario para que no se guarde
-            messages.warning(self.request, "No tienes permiso para cambiar el estado de publicación del inmueble.")
+        messages.success(self.request, f'Inmueble "{form.instance.nombre}" actualizado correctamente.')
         return super().form_valid(form)
 
 
 class InmuebleDeleteView(PuedeGestionarInmueblesMixin, DeleteView):
     model = Inmueble
     template_name = 'inmuebles/inmueble_confirm_delete.html'
-    success_url = reverse_lazy('inmueble_list')
+    
+    def get_success_url(self):
+        return reverse_lazy('perfil')
     
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
+        
         # Si no es administrador, solo puede eliminar sus propios inmuebles
-        if not (user.is_superuser or user.has_perm('portal.ver_todos_inmuebles')):
+        if not (user.is_superuser or user.has_perm('portal.eliminar_todos_inmuebles')):
             queryset = queryset.filter(propietario=user)
         return queryset
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Inmueble eliminado correctamente.')
+        return super().delete(request, *args, **kwargs)
 
 #########################################################
 #CRUD SOLICITUD ARRIENDO

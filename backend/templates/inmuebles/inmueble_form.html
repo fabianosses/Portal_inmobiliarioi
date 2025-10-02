@@ -216,6 +216,10 @@
                                 <i class="bi bi-check-circle"></i> 
                                 {% if object %}Actualizar{% else %}Crear{% endif %} Inmueble
                             </button>
+                            <a href="{% url 'borrar_inmueble' inmueble.pk %}" 
+                                class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </a>
                         </div>
                     </form>
                 </div>

@@ -18,9 +18,10 @@
                         <i class="bi bi-house"></i> Inicio
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'inmueble_list' %}active{% endif %}" 
-                       href="{% url 'inmueble_list' %}">
+                    href="{% url 'inmueble_list' %}">
                         <i class="bi bi-search"></i> Propiedades
                     </a>
                 </li>
@@ -86,13 +87,11 @@
         </div>
     </div>
 
-    {% if user.tipo_usuario == 'ADMINISTRADOR' or user.is_superuser %}
+    {% if user.is_authenticated and user.tipo_usuario in 'ARRENDADOR,ADMINISTRADOR' %}
     <li class="nav-item">
-        <a class="nav-link" href="{% url 'inmuebles_pendientes' %}">
-            <i class="bi bi-clock-history"></i> Pendientes
-            {% if inmuebles_pendientes_count %}
-            <span class="badge bg-danger">{{ inmuebles_pendientes_count }}</span>
-            {% endif %}
+        <a class="nav-link btn btn-success text-white mx-2" 
+        href="{% url 'inmueble_create' %}">
+            <i class="bi bi-plus-circle"></i> Publicar Propiedad
         </a>
     </li>
     {% endif %}
