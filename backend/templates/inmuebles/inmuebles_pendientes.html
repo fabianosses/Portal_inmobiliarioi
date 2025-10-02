@@ -1,0 +1,33 @@
+<!-- templates/inmuebles/inmuebles_pendientes.html -->
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <h2>Inmuebles Pendientes de Aprobación</h2>
+    
+    {% for inmueble in inmuebles_pendientes %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ inmueble.nombre }}</h5>
+            <p class="card-text">{{ inmueble.descripcion }}</p>
+            <p><strong>Propietario:</strong> {{ inmueble.propietario.get_full_name }}</p>
+            <p><strong>Ubicación:</strong> {{ inmueble.comuna_nombre }}, {{ inmueble.region_nombre }}</p>
+            <p><strong>Precio:</strong> ${{ inmueble.precio_mensual }}</p>
+            
+            <div class="d-flex gap-2">
+                <form method="post" action="{% url 'aprobar_inmueble' inmueble.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Aprobar y Publicar</button>
+                </form>
+                <a href="{% url 'actualizar_inmueble' inmueble.pk %}" class="btn btn-warning">Editar</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        No hay inmuebles pendientes de aprobación.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

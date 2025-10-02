@@ -83,26 +83,55 @@ class PuedeGestionarInmueblesMixin(BasePermissionMixin):
             user.tipo_usuario in ['ARRENDADOR', 'ADMINISTRADOR'] or
             user.has_perm('portal.agregar_inmueble')
         )
+#######################################################
+# Administradores
+# Aprobar inmuebles
+class InmuebleAprobarView(AdministradorMixin, UpdateView):
+    model = Inmueble
+    fields = ['esta_publicado']
+    template_name = 'inmuebles/inmueble_aprobar.html'
+    
+    def form_valid(self, form):
+        form.instance.esta_publicado = True
+        messages.success(self.request, f'Inmueble "{form.instance.nombre}" ha sido aprobado y publicado.')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('inmuebles_pendientes')
+
+#Inmuebles pendientes de aprobación
+class InmueblesPendientesListView(AdministradorMixin, ListView):
+    model = Inmueble
+    template_name = 'inmuebles/inmuebles_pendientes.html'
+    context_object_name = 'inmuebles_pendientes'
+    
+    def get_queryset(self):
+        return Inmueble.objects.filter(esta_publicado=False).order_by('-creado')
+#######################################################
 
 logger = logging.getLogger(__name__)
-
+#############################################################
+# cargar comunas
 @require_GET
 @csrf_exempt
 def cargar_comunas(request):
     """Vista para cargar comunas basadas en la región seleccionada"""
     region_code = request.GET.get('region', '').strip()
     
+    print(f"DEBUG VISTA: cargar_comunas llamado con región: '{region_code}'")  # Debug
     logger.info(f"=== SOLICITUD CARGAR COMUNAS ===")
     logger.info(f"Parámetro región recibido: '{region_code}'")
-    logger.info(f"Headers: {dict(request.headers)}")
     
     if not region_code:
+        print("DEBUG VISTA: Código de región no proporcionado")  # Debug
         logger.warning("Código de región no proporcionado")
         return JsonResponse({'error': 'Código de región no proporcionado', 'comunas': []}, status=400)
     
     try:
-        logger.info(f"Buscando comunas para región: {region_code}")
+        print(f"DEBUG VISTA: Buscando comunas para región: {region_code}")  # Debug
         comunas = ChileanLocationService.get_comunas_by_region(region_code)
+        print(f"DEBUG VISTA: Comunas encontradas: {len(comunas)}")  # Debug
+        
         logger.info(f"Comunas encontradas: {len(comunas)}")
         
         # Log las primeras 3 comunas para debugging
@@ -116,10 +145,12 @@ def cargar_comunas(request):
                 'comunas': []
             }, status=404)
         
+        print("DEBUG VISTA: Enviando respuesta con comunas")  # Debug
         logger.info("Enviando respuesta con comunas")
         return JsonResponse(comunas, safe=False)
         
     except Exception as e:
+        print(f"DEBUG VISTA: Error crítico: {e}")  # Debug
         logger.error(f"Error crítico en cargar_comunas: {e}", exc_info=True)
         return JsonResponse({
             'error': f'Error interno del servidor: {str(e)}',
@@ -262,15 +293,34 @@ class InmueblesListView(ListView):
     
     def get_queryset(self):
         # Solo mostrar inmuebles publicados para usuarios normales
-        queryset = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')
+        queryset = Inmueble.objects.filter(esta_publicado=True).select_related('propietario').order_by('-creado')
         
         user = self.request.user
         # Administradores pueden ver todos los inmuebles
         if user.is_authenticated and (user.is_superuser or user.tipo_usuario == 'ADMINISTRADOR'):
-            queryset = Inmueble.objects.all().order_by('-creado')
+            queryset = Inmueble.objects.all().select_related('propietario').order_by('-creado')
         
         logger.info(f"InmueblesListView - Mostrando {queryset.count()} inmuebles")
+        
+        # DEBUG: Log para verificar imágenes
+        for inmueble in queryset:
+            logger.info(f"Inmueble: {inmueble.nombre}, Imagen: {inmueble.imagen}, URL: {inmueble.imagen.url if inmueble.imagen else 'No image'}")
+        
         return queryset
+    
+    #debug
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Debug information
+        for inmueble in context['inmuebles']:
+            print(f"DEBUG - Inmueble: {inmueble.nombre}")
+            print(f"DEBUG - Tiene imagen: {bool(inmueble.imagen)}")
+            if inmueble.imagen:
+                print(f"DEBUG - URL de imagen: {inmueble.imagen.url}")
+                print(f"DEBUG - Path de imagen: {inmueble.imagen.path}")
+        
+        return context
 
 class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     model = Inmueble
@@ -279,6 +329,12 @@ class InmuebleCreateView(PuedeGestionarInmueblesMixin, CreateView):
     
     def get_success_url(self):
         return reverse_lazy('perfil')
+    
+    def get_form(self, form_class=None):
+        print("DEBUG: InmuebleCreateView - get_form llamado")  # Debug
+        form = super().get_form(form_class)
+        print(f"DEBUG: Formulario inicializado - region choices: {form.fields['region_codigo'].choices}")  # Debug
+        return form
     
     def form_valid(self, form):
         try:
@@ -638,19 +694,28 @@ class CustomLogoutView(LogoutView):
 # Vista para la página de inicio
 #########################################################
 # Esta vista mostrará las propiedades destacadas para todos los usuarios.
+# backend/portal/views.py
 def home_view(request):
     """Vista para la página de inicio que muestra propiedades publicadas"""
     try:
         # Mostrar inmuebles publicados, ordenados por los más recientes
         inmuebles = Inmueble.objects.filter(esta_publicado=True).order_by('-creado')[:8]
         
+        # DEBUG: Log detallado
+        logger.info(f"=== HOME VIEW DEBUG ===")
+        logger.info(f"Total inmuebles en BD: {Inmueble.objects.count()}")
+        logger.info(f"Inmuebles publicados: {Inmueble.objects.filter(esta_publicado=True).count()}")
+        logger.info(f"Inmuebles a mostrar: {inmuebles.count()}")
+        
+        # Log cada inmueble que se va a mostrar
+        for i, inmueble in enumerate(inmuebles):
+            logger.info(f"Inmueble {i+1}: {inmueble.nombre} - Publicado: {inmueble.esta_publicado}")
+        
         # Obtener estadísticas para mostrar en el home
         total_inmuebles = Inmueble.objects.filter(esta_publicado=True).count()
         total_arrendadores = PerfilUsuario.objects.filter(
             tipo_usuario=PerfilUsuario.TipoUsuario.ARRENDADOR
         ).count()
-        
-        logger.info(f"Home - Mostrando {inmuebles.count()} inmuebles publicados")
         
         context = {
             'inmuebles': inmuebles,
@@ -660,5 +725,6 @@ def home_view(request):
         return render(request, 'web/home.html', context)
         
     except Exception as e:
-        logger.error(f"Error en home_view: {e}")
+        logger.error(f"Error en home_view: {e}", exc_info=True)
+        # En caso de error, pasar una lista vacía
         return render(request, 'web/home.html', {'inmuebles': []})

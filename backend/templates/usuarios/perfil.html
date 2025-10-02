@@ -4,6 +4,9 @@
 
 {% block title %}Mi Perfil - Inmobiliaria Conecta{% endblock %}
 
+{% block extra_css %}
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row">
@@ -76,38 +79,20 @@
             <div class="card-body">
                 {% if mis_inmuebles %}
                     <div class="profile-inmuebles-grid">
-                        {% for inmueble in mis_inmuebles %}
+                       {% for inmueble in mis_inmuebles %}
                         <div class="inmueble-mini-card">
-                            <div class="d-flex align-items-start mb-2">
-                                {% if inmueble.imagen %}
-                                    <img src="{{ inmueble.imagen.url }}" class="rounded me-3" 
-                                        alt="{{ inmueble.nombre }}" style="width: 80px; height: 60px; object-fit: cover;">
-                                {% else %}
-                                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
-                                        style="width: 80px; height: 60px;">
-                                        <i class="bi bi-house text-muted"></i>
-                                    </div>
-                                {% endif %}
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ inmueble.nombre }}</h6>
-                                    <p class="text-muted small mb-1">
-                                        <i class="bi bi-geo-alt"></i> {{ inmueble.comuna_nombre }}
-                                    </p>
-                                    <p class="text-primary fw-bold mb-0">${{ inmueble.precio_mensual }}/mes</p>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="badge {% if inmueble.esta_publicado %}bg-success{% else %}bg-warning{% endif %}">
-                                    {% if inmueble.esta_publicado %}Publicado{% else %}En revisión{% endif %}
-                                </span>
-                                <div>
-                                    <a href="{% url 'actualizar_inmueble' inmueble.id %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="{% url 'inmueble_list' %}" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </div>
+                            <h6>{{ inmueble.nombre }}</h6>
+                            <p class="small">{{ inmueble.descripcion|truncatewords:10 }}</p>
+                            
+                            <!-- Mostrar estado -->
+                            {% if inmueble.esta_publicado %}
+                                <span class="badge bg-success">Publicado</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pendiente de Aprobación</span>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <a href="{% url 'actualizar_inmueble' inmueble.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
                             </div>
                         </div>
                         {% endfor %}
@@ -355,29 +340,5 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.card {
-    border-radius: 10px;
-}
-
-.shadow-custom {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.list-group-item {
-    border: none;
-    padding: 0.75rem 0;
-}
-
-.badge {
-    font-size: 0.75em;
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    color: #495057;
-}
-</style>
+{% block extra_js %}
 {% endblock %}

@@ -99,6 +99,17 @@ class Inmueble(models.Model):
         self.clean()  # Ejecutar validaciones antes de guardar
         super().save(*args, **kwargs)
 
+    def upload_to_inmuebles(instance, filename):
+        """Función para generar rutas dinámicas para imágenes de inmuebles"""
+        ext = filename.split('.')[-1]
+        filename = f'{instance.nombre.replace(" ", "_")}_{instance.id}.{ext}'
+        return f'inmuebles/{filename}'
+    
+    imagen = models.ImageField(
+        upload_to=upload_to_inmuebles, 
+        default='inmuebles/sin_imagen.jpg'
+    )
+
 class SolicitudArriendo(models.Model):
     class EstadoSolicitud(models.TextChoices):
         PENDIENTE = "P", _("Pendiente")

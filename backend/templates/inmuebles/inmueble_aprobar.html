@@ -1,0 +1,25 @@
+{% extends 'web/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Aprobar Inmueble</h4>
+                </div>
+                <div class="card-body">
+                    <p>¿Estás seguro de que quieres aprobar el inmueble <strong>{{ object.nombre }}</strong>?</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">Sí, Aprobar</button>
+                            <a href="{% url 'inmuebles_pendientes' %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

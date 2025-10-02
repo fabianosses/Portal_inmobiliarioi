@@ -8,6 +8,16 @@
 <link href="{% static 'portal/css/styles.css' %}" rel="stylesheet">
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    console.log("DEBUG: Template - extra_js block cargado");
+</script>
+<script src="{% static 'portal/js/inmuebles.js' %}"></script>
+<script>
+    console.log("DEBUG: Template - inmuebles.js cargado");
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -93,6 +103,18 @@
                                     
                                     <div class="mb-3">
                                         <label for="{{ form.region_codigo.id_for_label }}" class="form-label">Región</label>
+                                        
+                                        <!-- Debug del campo región -->
+                                        <div style="background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                                            <small class="text-muted">
+                                                DEBUG: Field attributes:<br>
+                                                - ID: {{ form.region_codigo.id_for_label }}<br>
+                                                - Choices count: {{ form.region_codigo.field.choices|length }}<br>
+                                                - Is required: {{ form.region_codigo.field.required }}<br>
+                                                - Widget: {{ form.region_codigo.field.widget }}
+                                            </small>
+                                        </div>
+                                        
                                         {{ form.region_codigo }}
                                         {% for error in form.region_codigo.errors %}
                                             <div class="field-error">{{ error }}</div>
@@ -103,8 +125,14 @@
                                         <label for="id_comuna_codigo" class="form-label required-field">Comuna</label>
                                         
                                         <!-- El select se carga dinámicamente por JavaScript -->
-                                        <select name="comuna_codigo" id="id_comuna_codigo" class="form-control" disabled required>
-                                            <option value="">Selecciona una región primero</option>
+                                        <select name="comuna_codigo" id="id_comuna_codigo" class="form-control" {% if not form.comuna_codigo.field.disabled %}disabled{% endif %} required>
+                                            {% if form.comuna_codigo.field.choices %}
+                                                {% for value, label in form.comuna_codigo.field.choices %}
+                                                    <option value="{{ value }}" {% if form.comuna_codigo.value == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            {% else %}
+                                                <option value="">Selecciona una región primero</option>
+                                            {% endif %}
                                         </select>
 
                                         <div class="form-text" id="comuna-loading" style="display: none;">
@@ -195,8 +223,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'portal/js/inmuebles.js' %}"></script>
 {% endblock %}

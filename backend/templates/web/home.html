@@ -6,10 +6,14 @@
 
 {% block main_class %}home-page{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'portal/css/styles.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <!-- Hero Section -->
 <section class="hero-section bg-primary bg-gradient text-white py-5">
-    <div class="container">
+    <div class="container position-relative">
         <div class="row align-items-center min-vh-50">
             <div class="col-lg-6">
                 <h1 class="display-4 fw-bold mb-4">Encuentra tu hogar ideal</h1>
@@ -40,28 +44,43 @@
             <div class="col-12 text-center">
                 <h2 class="fw-bold mb-3">Propiedades Destacadas</h2>
                 <p class="text-muted">Descubre las mejores oportunidades de arriendo</p>
+                <!-- DEBUG INFO - Solo visible si hay propiedades -->
+                {% if inmuebles.count > 0 %}
+                <div class="alert alert-info d-inline-block mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>Mostrando {{ inmuebles.count }} propiedad{{ inmuebles.count|pluralize:"es" }} destacada{{ inmuebles.count|pluralize:"s" }}</small>
+                </div>
+                {% endif %}
             </div>
         </div>
         
         <div class="row g-4">
-            {% for inmueble in inmuebles|slice:":6" %}
+            {% for inmueble in inmuebles %}
             <div class="col-md-6 col-lg-4">
                 {% include 'inmuebles/partials/property_card.html' with inmueble=inmueble %}
             </div>
             {% empty %}
             <div class="col-12">
                 <div class="text-center py-5">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle display-4 text-info mb-3"></i>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
                         <h4>No hay propiedades disponibles</h4>
-                        <p class="mb-0">Pronto tendremos nuevas oportunidades para ti</p>
+                        <p class="mb-3">Actualmente no hay propiedades publicadas en el sistema.</p>
+                        {% if user.is_authenticated and user.tipo_usuario == 'ARRENDADOR' %}
+                        <a href="{% url 'inmueble_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Publicar primera propiedad
+                        </a>
+                        {% elif not user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Regístrate para publicar
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         
-        {% if inmuebles.count > 6 %}
+        {% if inmuebles.count > 0 and inmuebles.count >= 6 %}
         <div class="text-center mt-5">
             <a href="{% url 'inmueble_list' %}" class="btn btn-outline-primary btn-lg">
                 <i class="bi bi-grid-3x3-gap me-2"></i>Ver Todas las Propiedades
@@ -71,12 +90,42 @@
     </div>
 </section>
 
+<!-- Estadísticas -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="stat-card">
+                    <i class="bi bi-building display-4 text-primary mb-3"></i>
+                    <h3 class="fw-bold">{{ total_inmuebles }}</h3>
+                    <p class="text-muted mb-0">Propiedades Disponibles</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stat-card">
+                    <i class="bi bi-people display-4 text-success mb-3"></i>
+                    <h3 class="fw-bold">{{ total_arrendadores }}</h3>
+                    <p class="text-muted mb-0">Arrendadores Activos</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stat-card">
+                    <i class="bi bi-shield-check display-4 text-warning mb-3"></i>
+                    <h3 class="fw-bold">100%</h3>
+                    <p class="text-muted mb-0">Propiedades Verificadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Características -->
-<section class="py-5">
+<section class="py-5 bg-light">
     <div class="container">
         <div class="row mb-5">
             <div class="col-12 text-center">
                 <h2 class="fw-bold mb-3">¿Por qué elegirnos?</h2>
+                <p class="text-muted lead">La plataforma más confiable para encontrar tu próximo hogar</p>
             </div>
         </div>
         
@@ -87,7 +136,7 @@
                     <i class="bi bi-shield-check display-6"></i>
                 </div>
                 <h4>Seguro y Confiable</h4>
-                <p class="text-muted">Todas las propiedades son verificadas y los arrendadores son confiables.</p>
+                <p class="text-muted">Todas las propiedades son verificadas y los arrendadores son confiables. Garantizamos transacciones seguras.</p>
             </div>
             
             <div class="col-md-4 text-center">
@@ -96,7 +145,7 @@
                     <i class="bi bi-search-heart display-6"></i>
                 </div>
                 <h4>Búsqueda Inteligente</h4>
-                <p class="text-muted">Encuentra fácilmente la propiedad que se adapte a tus necesidades.</p>
+                <p class="text-muted">Filtros avanzados para encontrar fácilmente la propiedad que se adapte a tus necesidades y presupuesto.</p>
             </div>
             
             <div class="col-md-4 text-center">
@@ -105,26 +154,60 @@
                     <i class="bi bi-headset display-6"></i>
                 </div>
                 <h4>Soporte 24/7</h4>
-                <p class="text-muted">Nuestro equipo está siempre disponible para ayudarte.</p>
+                <p class="text-muted">Nuestro equipo de soporte está siempre disponible para ayudarte en cada paso del proceso.</p>
             </div>
+        </div>
+
+        <div class="row g-4 mt-2">
+            <div class="col-md-4 text-center">
+                <div class="feature-icon bg-info bg-gradient text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-lightning-charge display-6"></i>
+                </div>
+                <h4>Proceso Rápido</h4>
+                <p class="text-muted">Desde la búsqueda hasta el arriendo, todo el proceso está optimizado para ser rápido y eficiente.</p>
+            </div>
+            
+            <div class="col-md-4 text-center">
+                <div class="feature-icon bg-danger bg-gradient text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-camera display-6"></i>
+                </div>
+                <h4>Fotos Reales</h4>
+                <p class="text-muted">Todas las propiedades cuentan con fotos reales y actualizadas para que sepas exactamente lo que ves.</p>
+            </div>
+            
+            <div class="col-md-4 text-center">
+                <div class="feature-icon bg-secondary bg-gradient text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-map display-6"></i>
+                </div>
+                <h4>Ubicaciones Estratégicas</h4>
+                <p class="text-muted">Propiedades en las mejores ubicaciones, cerca de servicios, transporte y centros comerciales.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-4">¿Listo para encontrar tu hogar ideal?</h2>
+        <p class="lead mb-4">Únete a miles de personas que ya encontraron su propiedad perfecta con nosotros.</p>
+        <div class="d-flex flex-wrap gap-3 justify-content-center">
+            <a href="{% url 'inmueble_list' %}" class="btn btn-light btn-lg">
+                <i class="bi bi-search me-2"></i>Explorar Propiedades
+            </a>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-person-plus me-2"></i>Crear Cuenta Gratis
+            </a>
+            {% endif %}
         </div>
     </div>
 </section>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.hero-section {
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-}
-.min-vh-50 {
-    min-height: 50vh;
-}
-.feature-icon {
-    transition: transform 0.3s ease;
-}
-.feature-icon:hover {
-    transform: scale(1.1);
-}
-</style>
+{% block extra_js %}
+<script src="{% static 'portal/js/inmuebles.js' %}"></script>
 {% endblock %}

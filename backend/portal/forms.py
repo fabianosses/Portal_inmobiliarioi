@@ -46,7 +46,7 @@ class InmuebleForm(forms.ModelForm):
             'nombre', 'imagen', 'descripcion', 'm2_construidos', 
             'm2_totales', 'estacionamientos', 'habitaciones', 'banos', 
             'direccion', 'precio_mensual', 'tipo_inmueble',
-            'region_codigo', 'comuna_codigo'  # MANTENER estos campos
+            'region_codigo', 'comuna_codigo'
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
@@ -65,8 +65,6 @@ class InmuebleForm(forms.ModelForm):
             'estacionamientos': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'tipo_inmueble': forms.Select(attrs={'class': 'form-control'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
-            # REMOVER los widgets para region_codigo y comuna_codigo 
-            # porque ya los definimos arriba en los fields
         }
         help_texts = {
             'precio_mensual': 'Precio mensual en pesos chilenos',
@@ -74,23 +72,68 @@ class InmuebleForm(forms.ModelForm):
             'm2_totales': 'Metros cuadrados totales del terreno',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs): # ¡ESTE MÉTODO DEBE ESTAR DENTRO DE LA CLASE!
+        print("DEBUG: Inicializando InmuebleForm")  # Debug
         super().__init__(*args, **kwargs)
+        
+        print("DEBUG: Llamando _cargar_regiones")  # Debug
         self._cargar_regiones()
         
-        # NO cargar comunas en el init del formulario
-        # Permitir cualquier valor para comuna_codigo
-        self.fields['comuna_codigo'].choices = []
+        # Inicializar comunas vacías
+        self.fields['comuna_codigo'].choices = [('', 'Selecciona una región primero')]
+        print(f"DEBUG: Choices de comuna_codigo: {self.fields['comuna_codigo'].choices}")  # Debug
         
-        # Si estamos editando, cargar la comuna específica
-        if self.instance and self.instance.pk and self.instance.region_codigo and self.instance.comuna_codigo:
+        # Si estamos editando, cargar la región y comunas correspondientes
+        if self.instance and self.instance.pk:
             try:
-                comunas = ChileanLocationService.get_comunas_by_region(self.instance.region_codigo)
-                comuna_choices = [(c['codigo'], c['nombre']) for c in comunas]
-                self.fields['comuna_codigo'].choices = comuna_choices
+                # Si hay una región seleccionada en la instancia, cargar sus comunas
+                if self.instance.region_codigo:
+                    region_codigo = self.instance.region_codigo
+                    comunas = ChileanLocationService.get_comunas_by_region(region_codigo)
+                    comuna_choices = [('', 'Selecciona una comuna')] + [(c['codigo'], c['nombre']) for c in comunas]
+                    self.fields['comuna_codigo'].choices = comuna_choices
+                    
+                
+                # Habilitar el campo de comuna
                 self.fields['comuna_codigo'].widget.attrs.pop('disabled', None)
+                print("DEBUG: Campo comuna habilitado")  # Debug
+                
+                # Establecer el valor actual de la comuna
+                if self.instance.comuna_codigo:
+                    self.initial['comuna_codigo'] = self.instance.comuna_codigo
+                    print(f"DEBUG: Comuna inicial establecida: {self.instance.comuna_codigo}")  # Debug
+                    
             except Exception as e:
+                print(f"DEBUG: Error cargando comunas para edición: {e}")  # Debug
                 logger.error(f"Error cargando comunas para edición: {e}")
+                self.fields['comuna_codigo'].choices = [('', 'Error cargando comunas')]
+
+        # Si hay datos POST, cargar comunas para validación
+        if self.is_bound:
+            print("DEBUG: Formulario con datos bound")  # Debug
+            self._cargar_comunas_en_validacion(self.data)
+        
+        # Debug final de las choices de región
+        print(f"DEBUG: Choices finales de region_codigo: {self.fields['region_codigo'].choices}")  # Debug
+
+    def _cargar_comunas_en_validacion(self, data):
+        """Carga las comunas solo si hay datos enviados para la región"""
+        region_codigo = data.get('region_codigo')
+        comuna_codigo = data.get('comuna_codigo')
+
+        if region_codigo:
+            try:
+                comunas = ChileanLocationService.get_comunas_by_region(region_codigo)
+                comuna_choices = [(c['codigo'], c['nombre']) for c in comunas]
+                self.fields['comuna_codigo'].choices = [('', 'Selecciona una comuna')] + comuna_choices
+            except Exception as e:
+                logger.error(f"Error cargando comunas para validación: {e}")
+
+    def full_clean(self):
+        """Sobrescribir full_clean para asegurar que las choices estén cargadas antes de la validación"""
+        if self.is_bound and not self.instance.pk:
+            self._cargar_comunas_en_validacion(self.data)
+        super().full_clean()
 
     def clean_comuna_codigo(self):
         """Validar que la comuna existe para la región seleccionada"""
@@ -120,14 +163,12 @@ class InmuebleForm(forms.ModelForm):
         region_codigo = cleaned_data.get('region_codigo')
         comuna_codigo = cleaned_data.get('comuna_codigo')
         
-        # Validar que si hay región, haya comuna y viceversa
         if region_codigo and not comuna_codigo:
             errors['comuna_codigo'] = 'Debes seleccionar una comuna'
         
         if comuna_codigo and not region_codigo:
             errors['region_codigo'] = 'Debes seleccionar una región'
         
-        # Otras validaciones existentes...
         m2_construidos = cleaned_data.get('m2_construidos')
         m2_totales = cleaned_data.get('m2_totales')
         
@@ -149,7 +190,6 @@ class InmuebleForm(forms.ModelForm):
             logger.error(f"Error cargando regiones: {e}")
             self.fields['region_codigo'].choices = [('', 'Error cargando regiones')]
 
-    # Mantener los demás métodos existentes (save, _guardar_nombres_ubicacion, etc.)
     def save(self, commit=True):
         instance = super().save(commit=False)
         self._guardar_nombres_ubicacion(instance)

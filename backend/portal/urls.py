@@ -2,6 +2,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from .api_views import RegionAPIView, ComunaAPIView
+from . import views
 from .views import (
     cargar_comunas,
     SolicitudArriendoCreateView,
@@ -12,6 +13,8 @@ from .views import (
     InmuebleCreateView,
     InmuebleUpdateView,
     InmuebleDeleteView,
+    InmuebleAprobarView,
+    InmueblesPendientesListView,
     RegionListView,
     RegionCreateView,
     RegionUpdateView,
@@ -33,8 +36,13 @@ from .views import (
 
 urlpatterns = [
 
-    path('', home_view, name='home'),
+    path('', views.home_view, name='home'),
 
+##########################################################
+#admin
+    path('aprobar_inmueble/<int:pk>/', InmuebleAprobarView.as_view(), name='aprobar_inmueble'),
+    path('inmuebles_pendientes/', InmueblesPendientesListView.as_view(), name='inmuebles_pendientes'),    
+##########################################################
     # region
     path('listar_regiones/', RegionListView.as_view(), name='region_list'),
     path('crear_region/', RegionCreateView.as_view(), name='region_create'),

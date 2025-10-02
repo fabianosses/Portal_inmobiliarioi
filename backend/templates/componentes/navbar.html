@@ -85,4 +85,15 @@
             </ul>
         </div>
     </div>
+
+    {% if user.tipo_usuario == 'ADMINISTRADOR' or user.is_superuser %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'inmuebles_pendientes' %}">
+            <i class="bi bi-clock-history"></i> Pendientes
+            {% if inmuebles_pendientes_count %}
+            <span class="badge bg-danger">{{ inmuebles_pendientes_count }}</span>
+            {% endif %}
+        </a>
+    </li>
+    {% endif %}
 </nav>
