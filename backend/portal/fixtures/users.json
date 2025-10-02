@@ -1,0 +1,74 @@
+[
+  {
+    "model": "portal.perfilusuario",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$xyz123$V9Q8w2X1Y7z6A5B4C3D2E1F0G9H8I7J6K5L4M3N2O1P0Q9R8S7T6U5V4W3X2Y1Z0==",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "Administrador",
+      "last_name": "Sistema",
+      "email": "admin@inmobiliaria.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "tipo_usuario": "ADMINISTRADOR",
+      "rut": "11111111-1",
+      "imagen": "foto_perfil/default-profile.webp",
+      "fecha_creacion": "2024-01-01T00:00:00Z",
+      "fecha_actualizacion": "2024-01-01T00:00:00Z",
+      "esta_activo": true,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "portal.perfilusuario",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$abc456$A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6a7b8c9d0e1f2g==",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "arrendador1",
+      "first_name": "Juan",
+      "last_name": "Pérez",
+      "email": "juan@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "tipo_usuario": "ARRENDADOR",
+      "rut": "22222222-2",
+      "imagen": "foto_perfil/default-profile.webp",
+      "fecha_creacion": "2024-01-01T00:00:00Z",
+      "fecha_actualizacion": "2024-01-01T00:00:00Z",
+      "esta_activo": true,
+      "groups": [2],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "portal.perfilusuario",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$def789$H1I2J3K4L5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9a0b1c2d3e4f5g6h7i8j9k0l1m==",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "arrendatario1",
+      "first_name": "María",
+      "last_name": "González",
+      "email": "maria@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "tipo_usuario": "ARRENDATARIO",
+      "rut": "33333333-3",
+      "imagen": "foto_perfil/default-profile.webp",
+      "fecha_creacion": "2024-01-01T00:00:00Z",
+      "fecha_actualizacion": "2024-01-01T00:00:00Z",
+      "esta_activo": true,
+      "groups": [3],
+      "user_permissions": []
+    }
+  }
+]

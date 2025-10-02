@@ -1,0 +1,77 @@
+[
+  {
+    "model": "portal.inmueble",
+    "pk": 1,
+    "fields": {
+      "propietario": 2,
+      "nombre": "Casa moderna en Las Condes",
+      "imagen": "inmuebles/casa_las_condes.jpg",
+      "descripcion": "Hermosa casa moderna con amplio jardín, perfecta para familia. Ubicada en sector tranquilo y seguro.",
+      "m2_construidos": 180.0,
+      "m2_totales": 350.0,
+      "estacionamientos": 2,
+      "habitaciones": 4,
+      "banos": 3,
+      "direccion": "Av. Presidente Kennedy 4500",
+      "precio_mensual": 850000,
+      "creado": "2024-01-15T10:00:00Z",
+      "actualizado": "2024-01-15T10:00:00Z",
+      "region_codigo": "RM",
+      "region_nombre": "Región Metropolitana",
+      "comuna_codigo": "LASCONDES",
+      "comuna_nombre": "Las Condes",
+      "tipo_inmueble": "CASA",
+      "esta_publicado": true
+    }
+  },
+  {
+    "model": "portal.inmueble",
+    "pk": 2,
+    "fields": {
+      "propietario": 2,
+      "nombre": "Departamento céntrico en Providencia",
+      "imagen": "inmuebles/depto_providencia.jpg",
+      "descripcion": "Departamento amplio y luminoso, excelente ubicación cerca de metro y servicios.",
+      "m2_construidos": 75.0,
+      "m2_totales": 75.0,
+      "estacionamientos": 1,
+      "habitaciones": 2,
+      "banos": 2,
+      "direccion": "Av. Providencia 2000",
+      "precio_mensual": 550000,
+      "creado": "2024-01-20T14:30:00Z",
+      "actualizado": "2024-01-20T14:30:00Z",
+      "region_codigo": "RM",
+      "region_nombre": "Región Metropolitana",
+      "comuna_codigo": "PROVIDENCIA",
+      "comuna_nombre": "Providencia",
+      "tipo_inmueble": "DEPARTAMENTO",
+      "esta_publicado": true
+    }
+  },
+  {
+    "model": "portal.inmueble",
+    "pk": 3,
+    "fields": {
+      "propietario": 1,
+      "nombre": "Parcela en Colina",
+      "imagen": "inmuebles/parcela_colina.jpg",
+      "descripcion": "Parcela de 5000m2 ideal para proyecto familiar o inversión. Con derechos de agua.",
+      "m2_construidos": 120.0,
+      "m2_totales": 5000.0,
+      "estacionamientos": 3,
+      "habitaciones": 3,
+      "banos": 2,
+      "direccion": "Camino Los Morros 1500",
+      "precio_mensual": 450000,
+      "creado": "2024-01-25T09:15:00Z",
+      "actualizado": "2024-01-25T09:15:00Z",
+      "region_codigo": "RM",
+      "region_nombre": "Región Metropolitana",
+      "comuna_codigo": "COLINA",
+      "comuna_nombre": "Colina",
+      "tipo_inmueble": "PARCELA",
+      "esta_publicado": false
+    }
+  }
+]

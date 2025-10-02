@@ -1,0 +1,25 @@
+================================================================================
+LISTADO DE INMUEBLES POR COMUNA
+Generado: 2025-10-02 20:06:06
+Método: ORM
+================================================================================
+
+COMUNA: LAS CONDES
+========================================
+
+1. Casa moderna en Las Condes
+   Descripción: Hermosa casa moderna con amplio jardín, perfecta para familia. Ubicada en sector tranquilo y seguro.
+
+Total en Las Condes: 1 inmuebles
+--------------------------------------------------------------------------------
+
+COMUNA: PROVIDENCIA
+========================================
+
+1. Departamento céntrico en Providencia
+   Descripción: Departamento amplio y luminoso, excelente ubicación cerca de metro y servicios.
+
+Total en Providencia: 1 inmuebles
+--------------------------------------------------------------------------------
+
+TOTAL GENERAL: 2 inmuebles listados

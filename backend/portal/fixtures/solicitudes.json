@@ -1,0 +1,15 @@
+[
+  {
+    "model": "portal.solicitudarriendo",
+    "pk": 1,
+    "fields": {
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "inmueble": 1,
+      "arrendatario": 3,
+      "mensaje": "Me interesa la propiedad para mi familia. ¿Podría visitarla este fin de semana?",
+      "estado": "P",
+      "creado": "2024-01-28T16:45:00Z",
+      "actualizado": "2024-01-28T16:45:00Z"
+    }
+  }
+]

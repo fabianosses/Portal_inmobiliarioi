@@ -1,0 +1,31 @@
+================================================================================
+LISTADO DE INMUEBLES POR REGIÓN
+Generado: 2025-10-02 20:20:08
+Método: ORM
+================================================================================
+
+🏞️  REGIÓN: REGIÓN METROPOLITANA
+==================================================
+
+1. 🏡 Casa moderna en Las Condes
+   📝 Hermosa casa moderna con amplio jardín, perfecta para familia. Ubicada en sector tranquilo y seguro.
+   💰 Precio: $850,000
+   🏘️  Tipo: CASA
+
+2. 🏡 Departamento céntrico en Providencia
+   📝 Departamento amplio y luminoso, excelente ubicación cerca de metro y servicios.
+   💰 Precio: $550,000
+   🏘️  Tipo: DEPARTAMENTO
+
+📊 RESUMEN REGIÓN METROPOLITANA:
+   • Total inmuebles: 2
+   • Valor total: $1,400,000
+   • Valor promedio: $700,000
+============================================================
+
+
+🎯 RESUMEN EJECUTIVO:
+   • Total regiones: 1
+   • Total inmuebles: 2
+   • Valor total en arriendo: $1,400,000
+   • Valor promedio: $700,000

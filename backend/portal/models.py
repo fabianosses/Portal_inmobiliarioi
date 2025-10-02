@@ -59,9 +59,9 @@ class Inmueble(models.Model):
         help_text="Precio mensual en pesos chilenos")
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
-    region_codigo = models.CharField(max_length=10, blank=True, null=True, verbose_name='Código de Región')
+    region_codigo = models.CharField(max_length=15, blank=True, null=True, verbose_name='Código de Región')
     region_nombre = models.CharField(max_length=100, blank=True, null=True)
-    comuna_codigo = models.CharField(max_length=10, blank=True, null=True, verbose_name='Código de Comuna')
+    comuna_codigo = models.CharField(max_length=15, blank=True, null=True, verbose_name='Código de Comuna')
     comuna_nombre = models.CharField(max_length=100, blank=True, null=True)
     tipo_inmueble = models.CharField(max_length=20, choices=Tipo_de_inmueble.choices)
     esta_publicado = models.BooleanField(default=False)
@@ -143,9 +143,9 @@ class PerfilUsuario(AbstractUser):
     rut = models.CharField(max_length=50, unique=True, blank=True, null=True)
     imagen = models.ImageField(upload_to='foto_perfil/', default="default-profile.webp")
     
-    # Campos adicionales para gestión
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    # Campos adicionales para gestión - HACER OPCIONALES
+    fecha_creacion = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True, null=True, blank=True)
     esta_activo = models.BooleanField(default=True)
 
     class Meta:
